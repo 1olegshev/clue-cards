@@ -111,9 +111,15 @@ export default function Navbar() {
           <Link
             href="/"
             onClick={handleHomeClick}
-            className="text-xl font-bold bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent hover:opacity-80 transition-opacity"
+            className="group flex items-center gap-2 hover:opacity-90 transition-opacity"
           >
-            Clue Cards
+            <span className="text-xl font-black tracking-tight">
+              <span className="text-red-500">Clue</span>
+              <span className="text-blue-500">Cards</span>
+            </span>
+            <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 group-hover:bg-amber-200 dark:group-hover:bg-amber-800/50 transition-colors">
+              BETA
+            </span>
           </Link>
 
           <div className="flex items-center gap-2">
