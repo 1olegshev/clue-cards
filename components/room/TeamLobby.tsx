@@ -1,0 +1,235 @@
+import type { GameState, Player } from "@/shared/types";
+
+interface TeamLobbyProps {
+  players: Player[];
+  currentPlayer: Player | null;
+  isRoomOwner: boolean;
+  gameState: GameState;
+  onSetRole: (team: "red" | "blue" | null, role: "spymaster" | "operative" | null) => void;
+  onRandomize: () => void;
+  onStartGame: () => void;
+  onTurnDurationChange: (duration: number) => void;
+  showControls?: boolean; // Hide start button in rematch mode
+}
+
+const turnOptions = [
+  { label: "Short (30s)", value: 30 },
+  { label: "Medium (60s)", value: 60 },
+  { label: "Long (90s)", value: 90 },
+];
+
+export default function TeamLobby({
+  players,
+  currentPlayer,
+  isRoomOwner,
+  gameState,
+  onSetRole,
+  onRandomize,
+  onStartGame,
+  onTurnDurationChange,
+  showControls = true,
+}: TeamLobbyProps) {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+      {showControls && (
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold">Teams ({players.length}/8)</h2>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600 dark:text-gray-400">Turn:</span>
+              {isRoomOwner ? (
+                <select
+                  value={gameState.turnDuration}
+                  onChange={(e) => onTurnDurationChange(Number(e.target.value))}
+                  className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
+                >
+                  {turnOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  {gameState.turnDuration}s
+                </span>
+              )}
+            </div>
+            {isRoomOwner && (
+              <button
+                onClick={onRandomize}
+                disabled={players.length < 4 || players.length % 2 !== 0}
+                data-testid="lobby-randomize-btn"
+                className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                Randomize Teams
+              </button>
+            )}
+            {isRoomOwner && showControls ? (
+              <button
+                onClick={onStartGame}
+                disabled={!players.every((player) => player.team && player.role) || players.length < 4 || players.length % 2 !== 0}
+                data-testid="lobby-start-btn"
+                className="bg-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                Start Game
+              </button>
+            ) : showControls ? (
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                Only the room owner can start the game
+              </span>
+            ) : null}
+          </div>
+        </div>
+      )}
+
+      {!showControls && (
+        <h2 className="text-xl font-semibold mb-4">Teams - Ready for Rematch</h2>
+      )}
+
+      <div className="grid md:grid-cols-2 gap-6">
+        {(["red", "blue"] as const).map((team) => {
+          const spymaster = players.find(
+            (player) => player.team === team && player.role === "spymaster"
+          );
+          const operatives = players.filter(
+            (player) => player.team === team && player.role === "operative"
+          );
+
+          return (
+            <div
+              key={team}
+              className={`rounded-xl border-2 p-4 shadow-sm ${
+                team === "red"
+                  ? "border-red-400 bg-white dark:bg-gray-900"
+                  : "border-blue-400 bg-white dark:bg-gray-900"
+              }`}
+            >
+              <h3 className={`text-lg font-semibold mb-3 ${
+                team === "red" ? "text-red-700 dark:text-red-300" : "text-blue-700 dark:text-blue-300"
+              }`}>
+                {team.toUpperCase()} TEAM
+              </h3>
+
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    <span className="font-semibold">Spymaster</span>
+                  </div>
+                  {showControls && (
+                    <button
+                      onClick={() => onSetRole(team, "spymaster")}
+                      disabled={Boolean(spymaster) && spymaster?.id !== currentPlayer?.id}
+                      data-testid={`lobby-join-${team}-spymaster`}
+                      className={`px-2 py-1 rounded text-xs font-semibold ${
+                        spymaster?.id === currentPlayer?.id
+                          ? "bg-gray-800 text-white"
+                          : team === "red"
+                            ? "bg-red-600 text-white hover:bg-red-700"
+                            : "bg-blue-600 text-white hover:bg-blue-700"
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                      Join
+                    </button>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 ml-6">Sees all cards • Gives one-word clues</p>
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-sm border border-gray-200 dark:border-gray-700">
+                  {spymaster ? (
+                    <div className="font-medium">{spymaster.name}</div>
+                  ) : (
+                    <span className="text-gray-500 dark:text-gray-400">Open</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <span className="font-semibold">Operatives</span>
+                  </div>
+                  {showControls && (
+                    <button
+                      onClick={() => onSetRole(team, "operative")}
+                      data-testid={`lobby-join-${team}-operative`}
+                      className={`px-2 py-1 rounded text-xs font-semibold ${
+                        team === "red"
+                          ? "bg-red-100 text-red-800 hover:bg-red-200"
+                          : "bg-blue-100 text-blue-800 hover:bg-blue-200"
+                      }`}
+                    >
+                      Join
+                    </button>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 ml-6">Guess words based on clues</p>
+                <div className="space-y-2">
+                  {operatives.length === 0 ? (
+                    <div className="text-sm text-gray-500 dark:text-gray-400">No operatives yet</div>
+                  ) : (
+                    operatives.map((player) => (
+                      <div key={player.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2 text-sm border border-gray-200 dark:border-gray-700">
+                        {player.name}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {currentPlayer?.team === team && showControls && (
+                <button
+                  onClick={() => onSetRole(null, null)}
+                  className="px-3 py-1 rounded text-xs font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300"
+                >
+                  Leave Team
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {showControls && (
+        <>
+          <div className="mt-6 bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold mb-3">All Players</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {players.map((player) => (
+                <div key={player.id} className="bg-gray-50 dark:bg-gray-900 rounded-lg px-3 py-2 text-sm border border-gray-200 dark:border-gray-700">
+                  <div className="font-medium">{player.name}</div>
+                  {player.team && player.role && (
+                    <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                      {player.team} {player.role}
+                    </div>
+                  )}
+                  {!player.team || !player.role ? (
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      No team selected
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </div>
+          {players.length < 4 && (
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
+              Waiting for {4 - players.length} more player{4 - players.length !== 1 ? "s" : ""}...
+            </p>
+          )}
+          {players.length >= 4 && players.length % 2 !== 0 && (
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
+              Need one more player for even teams.
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  );
+}

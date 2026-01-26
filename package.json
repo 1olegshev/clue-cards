@@ -1,0 +1,57 @@
+{
+  "name": "clue-cards",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "server": "tsx server/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:server": "vitest run server shared",
+    "test:build": "npm run typecheck && npm run build",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed --workers=1",
+    "test:e2e:ui": "playwright test --ui",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "server/**/*.ts": [
+      "npm run test:server --"
+    ],
+    "shared/**/*.ts": [
+      "npm run test:server --"
+    ],
+    "{app,components,hooks,lib}/**/*.{ts,tsx}": [
+      "bash -c 'npm run typecheck'"
+    ]
+  },
+  "dependencies": {
+    "firebase": "^12.8.0",
+    "next": "^16.1.4",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "ws": "^8.19.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.0",
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/node": "^25.0.10",
+    "@types/react": "^19.2.9",
+    "@types/react-dom": "^19.2.3",
+    "@types/ws": "^8.18.1",
+    "@vitest/coverage-v8": "^4.0.18",
+    "autoprefixer": "^10.4.23",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.18",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  }
+}
