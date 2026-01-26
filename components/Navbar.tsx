@@ -34,23 +34,40 @@ export default function Navbar() {
   const { theme, setTheme } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
-  const { isLastPlayer, isActiveGame } = useGameContext();
+  const { isLastPlayer, isActiveGame, leaveRoom } = useGameContext();
   const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
 
   // Check if user is in a game room
   const isInRoom = pathname?.startsWith("/room/");
   const shouldShowWarning = isInRoom && isActiveGame;
 
-  const handleHomeClick = (e: React.MouseEvent) => {
+  const handleHomeClick = async (e: React.MouseEvent) => {
     if (shouldShowWarning) {
       e.preventDefault();
       setShowLeaveModal(true);
+    } else if (isInRoom) {
+      // In room but no active game - leave explicitly before navigating
+      e.preventDefault();
+      setIsLeaving(true);
+      try {
+        await leaveRoom();
+      } catch (err) {
+        console.error("Error leaving room:", err);
+      }
+      router.push("/");
     }
-    // If in room but no active game, just navigate normally
+    // If not in room, just navigate normally
   };
 
-  const handleConfirmLeave = () => {
+  const handleConfirmLeave = async () => {
     setShowLeaveModal(false);
+    setIsLeaving(true);
+    try {
+      await leaveRoom();
+    } catch (err) {
+      console.error("Error leaving room:", err);
+    }
     router.push("/");
   };
 

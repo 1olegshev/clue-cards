@@ -123,7 +123,7 @@ function toMessages(messagesData: Record<string, MessageData> | null): ChatMessa
 }
 
 export function useRtdbRoom(roomCode: string, playerName: string): UseRtdbRoomReturn {
-  const { setIsLastPlayer, setIsActiveGame } = useGameContext();
+  const { setIsLastPlayer, setIsActiveGame, setLeaveRoom } = useGameContext();
 
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -265,6 +265,22 @@ export function useRtdbRoom(roomCode: string, playerName: string): UseRtdbRoomRe
       setIsActiveGame(false);
     };
   }, [isLast, isActive, setIsLastPlayer, setIsActiveGame]);
+
+  // Set up leaveRoom callback for Navbar to use before navigation
+  useEffect(() => {
+    const leaveRoomFn = async () => {
+      const pid = playerIdRef.current;
+      if (pid && roomCode) {
+        console.log("[leaveRoom] Leaving room explicitly:", roomCode, pid);
+        await actions.leaveRoom(roomCode, pid);
+        console.log("[leaveRoom] Left room successfully");
+      }
+    };
+    setLeaveRoom(leaveRoomFn);
+    return () => {
+      setLeaveRoom(async () => {});
+    };
+  }, [roomCode, setLeaveRoom]);
 
   // Action helpers
   const pid = () => playerIdRef.current;
