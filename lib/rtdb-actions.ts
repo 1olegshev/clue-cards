@@ -199,36 +199,21 @@ export async function reassignOwnerIfNeeded(roomCode: string): Promise<string | 
   const playersRef = ref(db, `rooms/${roomCode}/players`);
 
   const [roomSnap, playersSnap] = await Promise.all([get(roomRef), get(playersRef)]);
-  if (!roomSnap.exists() || !playersSnap.exists()) {
-    console.log("[reassignOwner] Room or players not found");
-    return null;
-  }
+  if (!roomSnap.exists() || !playersSnap.exists()) return null;
 
   const roomData = roomSnap.val() as RoomData;
   const players = playersSnap.val() as Record<string, PlayerData>;
   
   // Check if current owner is disconnected
   const currentOwner = players[roomData.ownerId];
-  console.log("[reassignOwner] Current owner:", roomData.ownerId, "connected:", currentOwner?.connected);
-  if (currentOwner?.connected) {
-    console.log("[reassignOwner] Owner still connected, no reassignment needed");
-    return null; // Owner is still connected
-  }
+  if (currentOwner?.connected) return null; // Owner is still connected
   
   // Find first connected player to become new owner
   const newOwnerEntry = Object.entries(players).find(([, p]) => p.connected);
-  if (!newOwnerEntry) {
-    console.log("[reassignOwner] No connected players found");
-    return null; // No connected players
-  }
+  if (!newOwnerEntry) return null; // No connected players
   
   const [newOwnerId, newOwnerData] = newOwnerEntry;
-  if (newOwnerId === roomData.ownerId) {
-    console.log("[reassignOwner] New owner is same as current");
-    return null; // Already owner
-  }
-  
-  console.log("[reassignOwner] Reassigning to:", newOwnerId, newOwnerData.name);
+  if (newOwnerId === roomData.ownerId) return null; // Already owner
   
   // Reassign ownership
   await update(roomRef, { ownerId: newOwnerId });
