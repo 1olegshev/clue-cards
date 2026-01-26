@@ -266,6 +266,9 @@ export async function leaveRoom(roomCode: string, playerId: string): Promise<voi
       await update(roomRef, { board: updatedBoard });
     }
     await update(playerRef, { connected: false, lastSeen: serverTimestamp() });
+    
+    // Reassign owner if the leaving player was the owner
+    await reassignOwnerIfNeeded(roomCode);
   }
 }
 

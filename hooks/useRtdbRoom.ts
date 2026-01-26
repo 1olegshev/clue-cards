@@ -240,9 +240,10 @@ export function useRtdbRoom(roomCode: string, playerName: string): UseRtdbRoomRe
       off(roomRef);
       off(playersRef);
       off(messagesRef);
-      // onDisconnect handles room cleanup automatically:
-      // - If last player: deletes entire room
-      // - If others connected: marks player as disconnected
+      // Explicitly leave room on navigation (onDisconnect only handles abnormal disconnects)
+      if (playerId) {
+        actions.leaveRoom(roomCode, playerId).catch(() => {});
+      }
     };
   }, [roomCode, playerName]);
 
