@@ -48,12 +48,20 @@ function parseArgs() {
   return result;
 }
 
-function allPlayersDisconnected(roomData) {
+function allPlayersDisconnected(roomData, staleMinutes = 5) {
   const players = roomData.players;
   if (!players || Object.keys(players).length === 0) return true;
-  // Treat anything other than explicit `true` as disconnected
-  // This handles: false, undefined, missing field, etc.
-  return Object.values(players).every((p) => p.connected !== true);
+  
+  const staleThreshold = Date.now() - staleMinutes * 60 * 1000;
+  
+  return Object.values(players).every((p) => {
+    // Explicit disconnection
+    if (p.connected !== true) return true;
+    // Connected but lastSeen is stale (zombie player from race condition)
+    if (p.lastSeen && p.lastSeen < staleThreshold) return true;
+    // Actually connected
+    return false;
+  });
 }
 
 async function main() {
