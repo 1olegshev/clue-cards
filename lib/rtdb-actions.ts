@@ -10,7 +10,7 @@ import {
 import { getDatabase } from "./firebase";
 import { generateBoard, assignTeams } from "@/shared/words";
 import { isValidClue, teamsAreReady, shufflePlayers, getRequiredVotes } from "@/shared/game-utils";
-import type { Player, Team, PauseReason } from "@/shared/types";
+import type { Player, Team, PauseReason, WordPack } from "@/shared/types";
 
 interface BoardCard {
   word: string;
@@ -24,6 +24,7 @@ interface RoomData {
   ownerId: string;
   currentTeam: Team;
   startingTeam: Team;
+  wordPack: WordPack;
   currentClue: { word: string; count: number } | null;
   remainingGuesses: number | null;
   turnStartTime: number | null;
@@ -118,6 +119,7 @@ export async function joinRoom(
       ownerId: playerId,
       currentTeam: startingTeam,
       startingTeam,
+      wordPack: "classic" as WordPack,
       currentClue: null,
       remainingGuesses: null,
       turnStartTime: null,
@@ -249,7 +251,8 @@ export async function startGame(roomCode: string, playerId: string): Promise<voi
 
   if (!teamsAreReady(players)) throw new Error("Teams not ready");
 
-  const boardWords = generateBoard();
+  const wordPack = (roomData.wordPack || "classic") as WordPack;
+  const boardWords = generateBoard(wordPack);
   const startingTeam = roomData.startingTeam as "red" | "blue";
   const board: BoardCard[] = assignTeams(boardWords, startingTeam).map((c) => ({
     word: c.word,
@@ -294,7 +297,8 @@ export async function rematch(roomCode: string, playerId: string): Promise<void>
 
   if (!teamsAreReady(players)) throw new Error("Teams not ready");
 
-  const boardWords = generateBoard();
+  const wordPack = (roomData.wordPack || "classic") as WordPack;
+  const boardWords = generateBoard(wordPack);
   const startingTeam: Team = Math.random() < 0.5 ? "red" : "blue";
   const board: BoardCard[] = assignTeams(boardWords, startingTeam).map((c) => ({
     word: c.word,
@@ -422,6 +426,21 @@ export async function setTurnDuration(roomCode: string, playerId: string, durati
   if (roomData.gameStarted) throw new Error("Game already started");
 
   await update(roomRef, { turnDuration: duration });
+}
+
+export async function setWordPack(roomCode: string, playerId: string, pack: WordPack): Promise<void> {
+  if (!["classic", "kahoot"].includes(pack)) throw new Error("Invalid word pack");
+  
+  const db = getDb();
+  const roomRef = ref(db, `rooms/${roomCode}`);
+  const roomSnap = await get(roomRef);
+
+  if (!roomSnap.exists()) throw new Error("Room not found");
+  const roomData = roomSnap.val() as RoomData;
+  if (roomData.ownerId !== playerId) throw new Error("Not room owner");
+  if (roomData.gameStarted) throw new Error("Game already started");
+
+  await update(roomRef, { wordPack: pack });
 }
 
 export async function setLobbyRole(

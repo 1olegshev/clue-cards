@@ -6,7 +6,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { ref, onValue, query, orderByChild, limitToLast, off, DatabaseReference } from "firebase/database";
 import { getDatabase } from "@/lib/firebase";
-import type { GameState, Player, ChatMessage, RoomClosedReason, Card } from "@/shared/types";
+import type { GameState, Player, ChatMessage, RoomClosedReason, Card, WordPack } from "@/shared/types";
 import { LOCAL_STORAGE_PLAYER_ID_KEY } from "@/shared/constants";
 import { useGameContext } from "@/components/GameContext";
 import * as actions from "@/lib/rtdb-actions";
@@ -34,6 +34,7 @@ export interface UseRtdbRoomReturn {
   handleSendMessage: (e: React.FormEvent) => void;
   handleGiveClue: (word: string, count: number) => void;
   handleTurnDurationChange: (duration: number) => void;
+  handleWordPackChange: (pack: WordPack) => void;
 }
 
 interface BoardCard {
@@ -83,6 +84,7 @@ function toGameState(roomCode: string, roomData: any, players: Player[]): GameSt
     cardVotes,
     currentTeam: roomData.currentTeam || "red",
     startingTeam: roomData.startingTeam || "red",
+    wordPack: roomData.wordPack || "classic",
     currentClue: roomData.currentClue || null,
     remainingGuesses: roomData.remainingGuesses ?? null,
     turnStartTime: roomData.turnStartTime || null,
@@ -312,6 +314,10 @@ export function useRtdbRoom(roomCode: string, playerName: string): UseRtdbRoomRe
     if (pid()) actions.setTurnDuration(roomCode, pid()!, d).catch(() => {});
   }, [roomCode]);
 
+  const handleWordPackChange = useCallback((pack: WordPack) => {
+    if (pid()) actions.setWordPack(roomCode, pid()!, pack).catch(() => {});
+  }, [roomCode]);
+
   return {
     gameState,
     players,
@@ -335,5 +341,6 @@ export function useRtdbRoom(roomCode: string, playerName: string): UseRtdbRoomRe
     handleSendMessage,
     handleGiveClue,
     handleTurnDurationChange,
+    handleWordPackChange,
   };
 }

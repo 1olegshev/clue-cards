@@ -1,5 +1,9 @@
-// Word list for Clue Cards game
-export const WORD_LIST = [
+// Word lists for Clue Cards game
+
+export type WordPack = "classic" | "kahoot";
+
+// Classic Codenames-style words
+export const CLASSIC_WORDS = [
   "AFRICA", "AGENT", "AIR", "ALIEN", "ALPS", "AMAZON", "AMBULANCE", "AMERICA", "ANGEL", "ANTARCTICA",
   "APPLE", "ARM", "ATLANTIS", "AUSTRALIA", "AZTEC", "BACK", "BALL", "BAND", "BANK", "BAR",
   "BARK", "BAT", "BATTERY", "BEACH", "BEAR", "BEAT", "BED", "BEIJING", "BELL", "BELT",
@@ -43,8 +47,40 @@ export const WORD_LIST = [
   "WEB", "WELL", "WHALE", "WHIP", "WIND", "WITCH", "WORM", "YARD"
 ];
 
-export function generateBoard(): string[] {
-  const shuffled = [...WORD_LIST].sort(() => Math.random() - 0.5);
+// Kahoot! themed words for team building
+export const KAHOOT_WORDS = [
+  // Game Mechanics
+  "HOST", "PLAYER", "LOBBY", "PODIUM", "PIN", "JOIN", "POINTS", "STREAK", "COMBO", "TIMER",
+  "SCORE", "WINNER", "RANKING", "LEADERBOARD", "BONUS", "BOOST", "COUNTDOWN", "ANSWER", "QUESTION", "CORRECT",
+  "MUSIC", "CELEBRATE", "COMPETE", "RACE", "PLAY",
+  // Content/Product
+  "QUIZ", "POLL", "SURVEY", "SLIDE", "PUZZLE", "CHALLENGE", "TEMPLATE", "COLLECTION", "LIBRARY", "DISCOVER",
+  "CREATE", "SHARE", "DRAFT", "PUBLISH", "PREVIEW", "DUPLICATE", "FOLDER", "SEARCH", "FILTER", "TAG",
+  // Education
+  "STUDY", "LEARN", "ASSIGN", "REPORT", "STUDENT", "TEACHER", "CLASS", "COURSE", "LESSON", "PRACTICE",
+  "REVIEW", "FLASHCARD", "MEMORY", "BRAIN", "THINK", "FOCUS", "TEST", "EXAM", "GRADE", "PROGRESS",
+  // General/Fun
+  "TEAM", "GROUP", "FAST", "CHOICE", "SELECT", "OPTION", "ROUND", "LEVEL", "STAGE", "CHAMPION",
+  "TROPHY", "MEDAL", "CONFETTI", "PARTY", "ENERGY", "SPARK", "FLASH", "INSTANT", "LIGHTNING", "ROCKET"
+];
+
+// Keep WORD_LIST as alias for backward compatibility
+export const WORD_LIST = CLASSIC_WORDS;
+
+// Get the word list for a given pack
+export function getWordList(pack: WordPack = "classic"): string[] {
+  switch (pack) {
+    case "kahoot":
+      return KAHOOT_WORDS;
+    case "classic":
+    default:
+      return CLASSIC_WORDS;
+  }
+}
+
+export function generateBoard(pack: WordPack = "classic"): string[] {
+  const wordList = getWordList(pack);
+  const shuffled = [...wordList].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, 25);
 }
 

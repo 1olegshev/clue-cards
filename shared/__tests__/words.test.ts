@@ -1,24 +1,61 @@
 import { describe, it, expect } from 'vitest';
-import { WORD_LIST, generateBoard, assignTeams } from '../words';
+import { WORD_LIST, CLASSIC_WORDS, KAHOOT_WORDS, generateBoard, assignTeams, getWordList } from '../words';
 
 // ============================================================================
-// WORD_LIST
+// Word Lists
 // ============================================================================
 
-describe('WORD_LIST', () => {
+describe('WORD_LIST (backward compatibility)', () => {
+  it('is an alias for CLASSIC_WORDS', () => {
+    expect(WORD_LIST).toBe(CLASSIC_WORDS);
+  });
+});
+
+describe('CLASSIC_WORDS', () => {
   it('has at least 25 words for a board', () => {
-    expect(WORD_LIST.length).toBeGreaterThanOrEqual(25);
+    expect(CLASSIC_WORDS.length).toBeGreaterThanOrEqual(25);
   });
 
   it('contains unique words', () => {
-    const uniqueWords = new Set(WORD_LIST);
-    expect(uniqueWords.size).toBe(WORD_LIST.length);
+    const uniqueWords = new Set(CLASSIC_WORDS);
+    expect(uniqueWords.size).toBe(CLASSIC_WORDS.length);
   });
 
   it('words are uppercase', () => {
-    WORD_LIST.forEach((word) => {
+    CLASSIC_WORDS.forEach((word) => {
       expect(word).toBe(word.toUpperCase());
     });
+  });
+});
+
+describe('KAHOOT_WORDS', () => {
+  it('has at least 25 words for a board', () => {
+    expect(KAHOOT_WORDS.length).toBeGreaterThanOrEqual(25);
+  });
+
+  it('contains unique words', () => {
+    const uniqueWords = new Set(KAHOOT_WORDS);
+    expect(uniqueWords.size).toBe(KAHOOT_WORDS.length);
+  });
+
+  it('words are uppercase', () => {
+    KAHOOT_WORDS.forEach((word) => {
+      expect(word).toBe(word.toUpperCase());
+    });
+  });
+});
+
+describe('getWordList', () => {
+  it('returns CLASSIC_WORDS for "classic" pack', () => {
+    expect(getWordList('classic')).toBe(CLASSIC_WORDS);
+  });
+
+  it('returns KAHOOT_WORDS for "kahoot" pack', () => {
+    expect(getWordList('kahoot')).toBe(KAHOOT_WORDS);
+  });
+
+  it('defaults to CLASSIC_WORDS when no pack specified', () => {
+    expect(getWordList()).toBe(CLASSIC_WORDS);
   });
 });
 
@@ -38,9 +75,25 @@ describe('generateBoard', () => {
     expect(uniqueWords.size).toBe(25);
   });
 
-  it('only uses words from WORD_LIST', () => {
+  it('only uses words from CLASSIC_WORDS by default', () => {
     const board = generateBoard();
-    const wordSet = new Set(WORD_LIST);
+    const wordSet = new Set(CLASSIC_WORDS);
+    board.forEach((word) => {
+      expect(wordSet.has(word)).toBe(true);
+    });
+  });
+
+  it('only uses words from CLASSIC_WORDS when "classic" pack specified', () => {
+    const board = generateBoard('classic');
+    const wordSet = new Set(CLASSIC_WORDS);
+    board.forEach((word) => {
+      expect(wordSet.has(word)).toBe(true);
+    });
+  });
+
+  it('only uses words from KAHOOT_WORDS when "kahoot" pack specified', () => {
+    const board = generateBoard('kahoot');
+    const wordSet = new Set(KAHOOT_WORDS);
     board.forEach((word) => {
       expect(wordSet.has(word)).toBe(true);
     });

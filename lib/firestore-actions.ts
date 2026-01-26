@@ -9,7 +9,7 @@ import {
 import { getFirestore } from "./firebase";
 import { generateBoard, assignTeams } from "@/shared/words";
 import { isValidClue, teamsAreReady, shufflePlayers, getRequiredVotes } from "@/shared/game-utils";
-import type { Player, Team, PauseReason } from "@/shared/types";
+import type { Player, Team, PauseReason, WordPack } from "@/shared/types";
 
 const STALE_PLAYER_MS = 2 * 60 * 1000; // 2 minutes - player considered disconnected if no ping
 
@@ -109,6 +109,7 @@ export async function joinRoom(roomCode: string, playerId: string, playerName: s
       const startingTeam: Team = Math.random() < 0.5 ? "red" : "blue";
       tx.set(roomRef, {
         ownerId: playerId, currentTeam: startingTeam, startingTeam,
+        wordPack: "classic" as WordPack,
         currentClue: null, remainingGuesses: null, turnStartTime: null, turnDuration: 60,
         gameStarted: false, gameOver: false, winner: null,
         paused: false, pauseReason: null, pausedForTeam: null,
@@ -174,8 +175,6 @@ export async function startGame(roomCode: string, playerId: string): Promise<voi
 
   if (!teamsAreReady(players)) throw new Error("Teams not ready");
 
-  const boardWords = generateBoard();
-
   return runTransaction(db, async (tx) => {
     const room = await tx.get(roomRef);
     if (!room.exists()) throw new Error("Room not found");
@@ -184,6 +183,8 @@ export async function startGame(roomCode: string, playerId: string): Promise<voi
     if (data.gameStarted) throw new Error("Game already started");
 
     const startingTeam = data.startingTeam as "red" | "blue";
+    const wordPack = (data.wordPack || "classic") as WordPack;
+    const boardWords = generateBoard(wordPack);
     const board = assignTeams(boardWords, startingTeam).map((c) => ({
       word: c.word, team: c.team, revealed: false, revealedBy: null, votes: [],
     }));
@@ -209,7 +210,6 @@ export async function rematch(roomCode: string, playerId: string): Promise<void>
   if (!teamsAreReady(players)) throw new Error("Teams not ready");
 
   const messagesSnap = await getDocs(collection(db, "rooms", roomCode, "messages"));
-  const boardWords = generateBoard();
   const startingTeam: Team = Math.random() < 0.5 ? "red" : "blue";
 
   return runTransaction(db, async (tx) => {
@@ -219,6 +219,8 @@ export async function rematch(roomCode: string, playerId: string): Promise<void>
     if (data.ownerId !== playerId) throw new Error("Not room owner");
     if (!data.gameOver) throw new Error("Game not over");
 
+    const wordPack = (data.wordPack || "classic") as WordPack;
+    const boardWords = generateBoard(wordPack);
     const board = assignTeams(boardWords, startingTeam).map((c) => ({
       word: c.word, team: c.team, revealed: false, revealedBy: null, votes: [],
     }));
@@ -310,6 +312,21 @@ export async function setTurnDuration(roomCode: string, playerId: string, durati
     if (data.ownerId !== playerId) throw new Error("Not room owner");
     if (data.gameStarted) throw new Error("Game already started");
     tx.update(roomRef, { turnDuration: duration, lastActivity: serverTimestamp() });
+  });
+}
+
+export async function setWordPack(roomCode: string, playerId: string, pack: WordPack): Promise<void> {
+  if (!["classic", "kahoot"].includes(pack)) throw new Error("Invalid word pack");
+  const db = getDb();
+  const roomRef = doc(db, "rooms", roomCode);
+
+  return runTransaction(db, async (tx) => {
+    const room = await tx.get(roomRef);
+    if (!room.exists()) throw new Error("Room not found");
+    const data = room.data();
+    if (data.ownerId !== playerId) throw new Error("Not room owner");
+    if (data.gameStarted) throw new Error("Game already started");
+    tx.update(roomRef, { wordPack: pack, lastActivity: serverTimestamp() });
   });
 }
 

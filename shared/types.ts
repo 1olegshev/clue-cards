@@ -1,5 +1,7 @@
 export type Team = "red" | "blue" | "neutral" | "assassin";
 
+export type WordPack = "classic" | "kahoot";
+
 export type Role = "spymaster" | "operative";
 export type LobbyTeam = "red" | "blue" | null;
 export type LobbyRole = "spymaster" | "operative" | null;
@@ -28,6 +30,7 @@ export interface GameState {
   cardVotes: Record<number, string[]>;
   currentTeam: Team;
   startingTeam: Team;
+  wordPack: WordPack; // Selected word pack for this game
   currentClue: { word: string; count: number } | null;
   remainingGuesses: number | null;
   turnStartTime: number | null;

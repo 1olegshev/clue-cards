@@ -1,4 +1,4 @@
-import type { GameState, Player } from "@/shared/types";
+import type { GameState, Player, WordPack } from "@/shared/types";
 
 interface TeamLobbyProps {
   players: Player[];
@@ -9,6 +9,7 @@ interface TeamLobbyProps {
   onRandomize: () => void;
   onStartGame: () => void;
   onTurnDurationChange: (duration: number) => void;
+  onWordPackChange: (pack: WordPack) => void;
   showControls?: boolean; // Hide start button in rematch mode
 }
 
@@ -16,6 +17,11 @@ const turnOptions = [
   { label: "Short (30s)", value: 30 },
   { label: "Medium (60s)", value: 60 },
   { label: "Long (90s)", value: 90 },
+];
+
+const wordPackOptions: { label: string; value: WordPack }[] = [
+  { label: "Classic", value: "classic" },
+  { label: "Kahoot!", value: "kahoot" },
 ];
 
 export default function TeamLobby({
@@ -27,6 +33,7 @@ export default function TeamLobby({
   onRandomize,
   onStartGame,
   onTurnDurationChange,
+  onWordPackChange,
   showControls = true,
 }: TeamLobbyProps) {
   return (
@@ -35,6 +42,26 @@ export default function TeamLobby({
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold">Teams ({players.length}/8)</h2>
           <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600 dark:text-gray-400">Words:</span>
+              {isRoomOwner ? (
+                <select
+                  value={gameState.wordPack}
+                  onChange={(e) => onWordPackChange(e.target.value as WordPack)}
+                  className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm"
+                >
+                  {wordPackOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  {gameState.wordPack === "kahoot" ? "Kahoot!" : "Classic"}
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600 dark:text-gray-400">Turn:</span>
               {isRoomOwner ? (

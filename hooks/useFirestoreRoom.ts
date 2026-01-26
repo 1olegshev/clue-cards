@@ -58,6 +58,7 @@ function toGameState(roomCode: string, roomData: any, players: Player[]): GameSt
     cardVotes,
     currentTeam: roomData.currentTeam || "red",
     startingTeam: roomData.startingTeam || "red",
+    wordPack: roomData.wordPack || "classic",
     currentClue: roomData.currentClue || null,
     remainingGuesses: roomData.remainingGuesses ?? null,
     turnStartTime: roomData.turnStartTime ? (roomData.turnStartTime as Timestamp).toMillis() : null,

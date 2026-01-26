@@ -242,6 +242,7 @@ export default function RoomPage() {
             onRandomize={room.handleRandomizeTeams}
             onStartGame={room.handleStartGame}
             onTurnDurationChange={room.handleTurnDurationChange}
+            onWordPackChange={room.handleWordPackChange}
             showControls={true}
           />
         )}
@@ -257,6 +258,7 @@ export default function RoomPage() {
             onRandomize={room.handleRandomizeTeams}
             onStartGame={room.handleStartGame}
             onTurnDurationChange={room.handleTurnDurationChange}
+            onWordPackChange={room.handleWordPackChange}
             showControls={false}
           />
         )}
