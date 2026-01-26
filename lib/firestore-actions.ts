@@ -1,6 +1,6 @@
 /**
  * Firestore actions for game operations.
- * These functions replace the WebSocket message handlers.
+ * All game state mutations go through these functions.
  */
 
 import {
@@ -11,10 +11,8 @@ import {
   setDoc,
   updateDoc,
   addDoc,
-  deleteDoc,
   writeBatch,
   serverTimestamp,
-  Timestamp,
   runTransaction,
   arrayUnion,
   arrayRemove,
@@ -22,7 +20,7 @@ import {
 import { getFirestore } from "./firebase";
 import { generateBoard, assignTeams } from "@/shared/words";
 import { isValidClue, teamsAreReady, shufflePlayers, getRequiredVotes } from "@/shared/game-utils";
-import type { Player, Team } from "@/shared/types";
+import type { Player, Team, PauseReason } from "@/shared/types";
 
 const TURN_DURATIONS = [30, 60, 90] as const;
 
@@ -35,15 +33,69 @@ function getDb() {
   return db;
 }
 
-// Helper to generate player ID (same as server)
-function generatePlayerId(): string {
-  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+// ============================================================================
+// Pause Logic Helpers
+// ============================================================================
+
+interface PauseCheckResult {
+  shouldPause: boolean;
+  reason: PauseReason;
+  team: Team | null;
 }
 
-// Helper to convert Firestore Timestamp to number
-function timestampToNumber(timestamp: Timestamp | null | undefined): number | null {
-  if (!timestamp) return null;
-  return timestamp.toMillis();
+/**
+ * Check if game should pause based on connected players for a team.
+ * Called at turn transitions before the new turn begins.
+ */
+function checkPauseConditions(
+  playersData: Array<{ team: string | null; role: string | null; connected: boolean }>,
+  currentTeam: "red" | "blue",
+  hasClue: boolean
+): PauseCheckResult {
+  const teamPlayers = playersData.filter((p) => p.team === currentTeam);
+  const connectedSpymaster = teamPlayers.find(
+    (p) => p.role === "spymaster" && p.connected
+  );
+  const connectedOperatives = teamPlayers.filter(
+    (p) => p.role === "operative" && p.connected
+  );
+
+  // Check if entire team is disconnected
+  const anyConnected = teamPlayers.some((p) => p.connected);
+  if (!anyConnected) {
+    return { shouldPause: true, reason: "teamDisconnected", team: currentTeam };
+  }
+
+  // If no clue yet, spymaster must be connected
+  if (!hasClue && !connectedSpymaster) {
+    return { shouldPause: true, reason: "spymasterDisconnected", team: currentTeam };
+  }
+
+  // If clue given, at least one operative must be connected
+  if (hasClue && connectedOperatives.length === 0) {
+    return { shouldPause: true, reason: "noOperatives", team: currentTeam };
+  }
+
+  return { shouldPause: false, reason: null, team: null };
+}
+
+/**
+ * Check if pause conditions are resolved (for resume validation).
+ */
+function canResume(
+  playersData: Array<{ team: string | null; role: string | null; connected: boolean }>,
+  currentTeam: "red" | "blue"
+): boolean {
+  const teamPlayers = playersData.filter((p) => p.team === currentTeam);
+  const connectedSpymaster = teamPlayers.find(
+    (p) => p.role === "spymaster" && p.connected
+  );
+  const connectedOperatives = teamPlayers.filter(
+    (p) => p.role === "operative" && p.connected
+  );
+
+  // Need at least spymaster and 1 operative connected
+  return Boolean(connectedSpymaster && connectedOperatives.length >= 1);
 }
 
 // ============================================================================
@@ -357,6 +409,59 @@ export async function endGame(roomCode: string, playerId: string): Promise<void>
   });
 }
 
+/**
+ * Resume a paused game (host only)
+ * Validates that conditions are met before resuming
+ */
+export async function resumeGame(roomCode: string, playerId: string): Promise<void> {
+  const db = getDb();
+  const roomRef = doc(db, "rooms", roomCode);
+
+  // Read players BEFORE transaction
+  const playersSnap = await getDocs(collection(db, "rooms", roomCode, "players"));
+  const playersData = playersSnap.docs.map((docSnap) => ({
+    team: docSnap.data().team,
+    role: docSnap.data().role,
+    connected: docSnap.data().connected,
+  }));
+
+  return runTransaction(db, async (transaction) => {
+    const roomSnap = await transaction.get(roomRef);
+    if (!roomSnap.exists()) throw new Error("Room not found");
+
+    const roomData = roomSnap.data();
+    if (roomData.ownerId !== playerId) throw new Error("Not room owner");
+    if (!roomData.paused) throw new Error("Game not paused");
+    if (!roomData.gameStarted || roomData.gameOver) throw new Error("Invalid game state");
+
+    const currentTeam = roomData.currentTeam as "red" | "blue";
+
+    // Verify conditions are met to resume
+    if (!canResume(playersData, currentTeam)) {
+      throw new Error("Cannot resume: team needs connected spymaster and at least one operative");
+    }
+
+    // Resume game
+    transaction.update(roomRef, {
+      paused: false,
+      pauseReason: null,
+      pausedForTeam: null,
+      turnStartTime: serverTimestamp(),
+      lastActivity: serverTimestamp(),
+    });
+
+    // Add system message
+    const messagesRef = collection(db, "rooms", roomCode, "messages");
+    transaction.set(doc(messagesRef), {
+      playerId: null,
+      playerName: "System",
+      message: "Game resumed by room owner.",
+      timestamp: serverTimestamp(),
+      type: "system",
+    });
+  });
+}
+
 // ============================================================================
 // Lobby Actions
 // ============================================================================
@@ -423,7 +528,8 @@ export async function setLobbyRole(
     if (!roomSnap.exists()) throw new Error("Room not found");
 
     const roomData = roomSnap.data();
-    if (roomData.gameStarted && !roomData.gameOver) {
+    // Allow role changes in lobby, after game over, or when paused
+    if (roomData.gameStarted && !roomData.gameOver && !roomData.paused) {
       throw new Error("Cannot change role during active game");
     }
 
@@ -655,6 +761,11 @@ export async function confirmReveal(roomCode: string, playerId: string, cardInde
   const playersSnap = await getDocs(collection(db, "rooms", roomCode, "players"));
   const boardSnap = await getDocs(collection(db, "rooms", roomCode, "board"));
   const cardIds = boardSnap.docs.map((docSnap) => docSnap.id);
+  const playersData = playersSnap.docs.map((docSnap) => ({
+    team: docSnap.data().team,
+    role: docSnap.data().role,
+    connected: docSnap.data().connected,
+  }));
 
   return runTransaction(db, async (transaction) => {
     const roomSnap = await transaction.get(roomRef);
@@ -725,11 +836,16 @@ export async function confirmReveal(roomCode: string, playerId: string, cardInde
       });
     } else if (!isCorrect) {
       // Wrong team or neutral - end turn
+      const newTeam = roomData.currentTeam === "red" ? "blue" : "red";
+      const pauseCheck = checkPauseConditions(playersData, newTeam, false);
       transaction.update(roomRef, {
-        currentTeam: roomData.currentTeam === "red" ? "blue" : "red",
-        turnStartTime: serverTimestamp(),
+        currentTeam: newTeam,
+        turnStartTime: pauseCheck.shouldPause ? null : serverTimestamp(),
         currentClue: null,
         remainingGuesses: null,
+        paused: pauseCheck.shouldPause,
+        pauseReason: pauseCheck.reason,
+        pausedForTeam: pauseCheck.team,
         lastActivity: serverTimestamp(),
       });
     } else {
@@ -756,11 +872,16 @@ export async function confirmReveal(roomCode: string, playerId: string, cardInde
         });
       } else if (newRemainingGuesses === 0) {
         // Out of guesses - end turn
+        const newTeam = roomData.currentTeam === "red" ? "blue" : "red";
+        const pauseCheck = checkPauseConditions(playersData, newTeam, false);
         transaction.update(roomRef, {
-          currentTeam: roomData.currentTeam === "red" ? "blue" : "red",
-          turnStartTime: serverTimestamp(),
+          currentTeam: newTeam,
+          turnStartTime: pauseCheck.shouldPause ? null : serverTimestamp(),
           currentClue: null,
           remainingGuesses: null,
+          paused: pauseCheck.shouldPause,
+          pauseReason: pauseCheck.reason,
+          pausedForTeam: pauseCheck.team,
           lastActivity: serverTimestamp(),
         });
       } else {
@@ -786,9 +907,15 @@ export async function endTurn(roomCode: string): Promise<void> {
   const db = getDb();
   const roomRef = doc(db, "rooms", roomCode);
 
-  // Get card IDs BEFORE transaction
+  // Get card IDs and players BEFORE transaction
   const boardSnap = await getDocs(collection(db, "rooms", roomCode, "board"));
   const cardIds = boardSnap.docs.map((docSnap) => docSnap.id);
+  const playersSnap = await getDocs(collection(db, "rooms", roomCode, "players"));
+  const playersData = playersSnap.docs.map((docSnap) => ({
+    team: docSnap.data().team,
+    role: docSnap.data().role,
+    connected: docSnap.data().connected,
+  }));
 
   return runTransaction(db, async (transaction) => {
     const roomSnap = await transaction.get(roomRef);
@@ -797,12 +924,20 @@ export async function endTurn(roomCode: string): Promise<void> {
     const roomData = roomSnap.data();
     if (!roomData.gameStarted || roomData.gameOver) throw new Error("Game not active");
 
-    // Switch teams
+    const newTeam = roomData.currentTeam === "red" ? "blue" : "red";
+
+    // Check if new team can play (no clue yet at turn start)
+    const pauseCheck = checkPauseConditions(playersData, newTeam, false);
+
+    // Switch teams (and possibly pause)
     transaction.update(roomRef, {
-      currentTeam: roomData.currentTeam === "red" ? "blue" : "red",
-      turnStartTime: serverTimestamp(),
+      currentTeam: newTeam,
+      turnStartTime: pauseCheck.shouldPause ? null : serverTimestamp(),
       currentClue: null,
       remainingGuesses: null,
+      paused: pauseCheck.shouldPause,
+      pauseReason: pauseCheck.reason,
+      pausedForTeam: pauseCheck.team,
       lastActivity: serverTimestamp(),
     });
 

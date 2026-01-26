@@ -2,32 +2,30 @@
 
 Core state lives in `shared/types.ts` and is stored in Firestore.
 
-### Core Fields
-
-- `roomCode`: identifier for the room.
-- `players`: list of players with `team`/`role` assigned in lobby before start.
-- `board`: 25 cards with `word`, `team`, and `revealed`.
-- `ownerId`: room creator who can change settings before start.
-- `cardVotes`: map of card index to playerId list for votes.
-- `currentTeam`: team whose turn it is.
-- `startingTeam`: team that starts (has 9 cards).
-- `currentClue`: the active clue for the turn.
-- `remainingGuesses`: guesses left this turn (`count + 1`).
-- `turnStartTime` and `turnDuration`: used to compute timer.
-- `gameStarted`, `gameOver`, `winner`: game lifecycle flags.
-
 ### Firestore Data Model
 
 ```
 rooms/{roomCode}
-  ├── (room document fields: ownerId, currentTeam, gameStarted, etc.)
-  ├── players/{playerId}
-  │     ├── name, team, role, connected, lastSeen
-  ├── board/{cardIndex}
-  │     ├── word, team, revealed, revealedBy, votes
-  └── messages/{messageId}
-        ├── playerId, playerName, message, timestamp, type
+  ├── ownerId, currentTeam, startingTeam, currentClue, remainingGuesses
+  ├── turnStartTime, turnDuration, gameStarted, gameOver, winner
+  ├── paused, pauseReason, pausedForTeam, createdAt, lastActivity
+  │
+  ├── players/{playerId}      (subcollection)
+  │     └── name, team, role, connected, lastSeen
+  │
+  ├── board/{cardIndex}       (subcollection, 0-24)
+  │     └── word, team, revealed, revealedBy, votes[]
+  │
+  └── messages/{messageId}    (subcollection)
+        └── playerId, playerName, message, timestamp, type
 ```
+
+### Key Fields
+
+- **Room document**: Game settings and current turn state
+- **players subcollection**: Each player's team assignment, role, and connection status
+- **board subcollection**: 25 cards with votes stored per-card (not at room level)
+- **messages subcollection**: Chat and clue history
 
 ## Turn Flow
 
@@ -38,6 +36,20 @@ rooms/{roomCode}
 5. When guesses run out or `endTurn` is called, the turn passes and clue resets.
 6. Assassin ends the game; all cards of a team revealed wins.
 7. `rematch` resets board and reassigns teams while keeping players.
+
+## Pause Mechanism
+
+At each turn transition (`confirmReveal` or `endTurn`), the game checks if the incoming team can play:
+- Needs at least one connected spymaster (to give clue)
+- Needs at least one connected operative (to guess)
+
+If conditions aren't met:
+- `paused` → `true`
+- `pauseReason` → `"spymasterDisconnected"` | `"noOperatives"` | `"teamDisconnected"`
+- `pausedForTeam` → the team that's missing players
+- `turnStartTime` → `null` (stops timer)
+
+Owner calls `resumeGame` to unpause once conditions are resolved.
 
 ## Lifecycle
 

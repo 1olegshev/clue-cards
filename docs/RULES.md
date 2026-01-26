@@ -27,16 +27,26 @@ This project aims to follow the official rules, with the following clarification
 - Only the room owner can start the game.
 - Room owner can end an active game, returning all players to the lobby.
 
-## Disconnection Handling
+## Pause and Disconnection Handling
 
-- If a player disconnects during an active game, the game may pause depending on their role:
-  - If the current team's spymaster disconnects before giving a clue, the game pauses.
-  - If all of the current team's operatives disconnect after a clue is given, the game pauses.
-  - If an entire team disconnects, the game pauses.
-- The timer stops while the game is paused.
-- When the missing player reconnects, the game resumes and the turn timer resets.
-- Players have 30 seconds to reconnect before a paused game is abandoned.
-- When leaving an active game, players see a confirmation dialog warning them of disconnection.
-- If they are the last player, the warning indicates the game will end for everyone.
+The game pauses automatically at **turn transitions** if the incoming team lacks required players:
+- The team's spymaster is disconnected (needed to give clue).
+- The team has no connected operatives (needed to guess).
+- The entire team is disconnected.
+
+**When paused:**
+- The turn timer stops.
+- A banner displays the pause reason.
+- Players can change their team/role assignments to fill vacant spots.
+- The room owner sees a "Resume Game" button when conditions are met.
+
+**Resuming:**
+- The room owner clicks "Resume Game" once the paused team has at least one spymaster and one operative connected.
+- The turn timer resets and the game continues.
+
+**Player disconnection:**
+- Leaving the room (navigation or tab close) marks the player as disconnected.
+- The pause check only happens at turn boundaries, not in real-time.
+- Players can rejoin by returning to the room with the same session.
 
 If we introduce deviations or house rules, list them here explicitly.

@@ -151,6 +151,7 @@ export default function RoomPage() {
               players={room.players}
               onEndTurn={room.handleEndTurn}
               onEndGame={room.handleEndGame}
+              onResumeGame={room.handleResumeGame}
               onRematch={room.handleRematch}
               onGiveClue={room.handleGiveClue}
             />

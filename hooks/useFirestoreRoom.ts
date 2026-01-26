@@ -1,6 +1,6 @@
 /**
  * Firestore-based room connection hook.
- * Replaces useRoomConnection with Firestore real-time listeners.
+ * Manages real-time subscriptions to room, players, board, and messages.
  */
 
 import { useEffect, useState, useRef, useCallback } from "react";
@@ -40,6 +40,7 @@ export interface UseFirestoreRoomReturn {
   handleRandomizeTeams: () => void;
   handleRematch: () => void;
   handleEndGame: () => void;
+  handleResumeGame: () => void;
   handleVoteCard: (index: number) => void;
   handleConfirmReveal: (index: number) => void;
   handleEndTurn: () => void;
@@ -395,6 +396,14 @@ export function useFirestoreRoom(
     });
   }, [roomCode]);
 
+  const handleResumeGame = useCallback(() => {
+    if (!playerIdRef.current) return;
+    actions.resumeGame(roomCode, playerIdRef.current).catch((error) => {
+      console.error("Error resuming game:", error);
+      setConnectionError(error.message);
+    });
+  }, [roomCode]);
+
   const handleVoteCard = useCallback(
     (index: number) => {
       if (!playerIdRef.current) return;
@@ -500,6 +509,7 @@ export function useFirestoreRoom(
     handleRandomizeTeams,
     handleRematch,
     handleEndGame,
+    handleResumeGame,
     handleVoteCard,
     handleConfirmReveal,
     handleEndTurn,
