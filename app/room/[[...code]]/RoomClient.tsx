@@ -227,7 +227,7 @@ export default function RoomPage() {
               </div>
             </div>
 
-            <CompactTeams players={room.players} />
+            <CompactTeams players={room.players} currentPlayerId={room.currentPlayer?.id} />
           </>
         )}
 

@@ -39,9 +39,9 @@ export default function TeamLobby({
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
       {showControls && (
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
           <h2 className="text-xl font-semibold">Teams ({players.length}/8)</h2>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600 dark:text-gray-400">Words:</span>
               {isRoomOwner ? (
@@ -87,9 +87,9 @@ export default function TeamLobby({
                 onClick={onRandomize}
                 disabled={players.length < 4 || players.length % 2 !== 0}
                 data-testid="lobby-randomize-btn"
-                className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="bg-gray-200 text-gray-800 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg font-semibold hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm sm:text-base"
               >
-                Randomize Teams
+                Randomize
               </button>
             )}
             {isRoomOwner && showControls ? (
@@ -97,7 +97,7 @@ export default function TeamLobby({
                 onClick={onStartGame}
                 disabled={!players.every((player) => player.team && player.role) || players.length < 4 || players.length % 2 !== 0}
                 data-testid="lobby-start-btn"
-                className="bg-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="bg-green-600 text-white px-4 py-1.5 sm:px-6 sm:py-2 rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm sm:text-base"
               >
                 Start Game
               </button>
@@ -165,9 +165,17 @@ export default function TeamLobby({
                   )}
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 ml-6">Sees all cards • Gives one-word clues</p>
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-sm border border-gray-200 dark:border-gray-700">
+                <div className={`rounded-lg p-3 text-sm border ${
+                  clueGiver?.id === currentPlayer?.id
+                    ? "bg-yellow-50 dark:bg-yellow-900/30 border-yellow-400 dark:border-yellow-600"
+                    : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                }`}>
                   {clueGiver ? (
-                    <div className="font-medium">{clueGiver.name}</div>
+                    <div className={`font-medium truncate ${
+                      clueGiver.id === currentPlayer?.id ? "text-yellow-700 dark:text-yellow-300" : ""
+                    }`}>
+                      {clueGiver.name}{clueGiver.id === currentPlayer?.id ? " (you)" : ""}
+                    </div>
                   ) : (
                     <span className="text-gray-500 dark:text-gray-400">Open</span>
                   )}
@@ -197,13 +205,17 @@ export default function TeamLobby({
                   )}
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 ml-6">Guess words based on clues</p>
-                <div className="space-y-2">
+                <div className="space-y-2 max-h-32 overflow-y-auto">
                   {guessers.length === 0 ? (
                     <div className="text-sm text-gray-500 dark:text-gray-400">No guessers yet</div>
                   ) : (
                     guessers.map((player) => (
-                      <div key={player.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2 text-sm border border-gray-200 dark:border-gray-700">
-                        {player.name}
+                      <div key={player.id} className={`rounded-lg px-3 py-2 text-sm border truncate ${
+                        player.id === currentPlayer?.id
+                          ? "bg-yellow-50 dark:bg-yellow-900/30 border-yellow-400 dark:border-yellow-600 text-yellow-700 dark:text-yellow-300 font-medium"
+                          : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                      }`}>
+                        {player.name}{player.id === currentPlayer?.id ? " (you)" : ""}
                       </div>
                     ))
                   )}
@@ -229,11 +241,21 @@ export default function TeamLobby({
             <h3 className="text-lg font-semibold mb-3">All Players</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {players.map((player) => (
-                <div key={player.id} className="bg-gray-50 dark:bg-gray-900 rounded-lg px-3 py-2 text-sm border border-gray-200 dark:border-gray-700">
-                  <div className="font-medium">{player.name}</div>
+                <div key={player.id} className={`rounded-lg px-3 py-2 text-sm border min-w-0 ${
+                  player.id === currentPlayer?.id
+                    ? "bg-yellow-50 dark:bg-yellow-900/30 border-yellow-400 dark:border-yellow-600"
+                    : "bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
+                }`}>
+                  <div className={`font-medium truncate ${
+                    player.id === currentPlayer?.id ? "text-yellow-700 dark:text-yellow-300" : ""
+                  }`}>
+                    {player.name}{player.id === currentPlayer?.id ? " (you)" : ""}
+                  </div>
                   {player.team && player.role && (
-                    <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                      {player.team} {player.role}
+                    <div className={`text-xs mt-1 ${
+                      player.team === "red" ? "text-red-600 dark:text-red-400" : "text-blue-600 dark:text-blue-400"
+                    }`}>
+                      {player.team} {player.role === "clueGiver" ? "clue giver" : "guesser"}
                     </div>
                   )}
                   {!player.team || !player.role ? (
