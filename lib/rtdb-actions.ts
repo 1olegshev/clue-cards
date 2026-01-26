@@ -678,11 +678,11 @@ export async function confirmReveal(roomCode: string, playerId: string, cardInde
     throw new Error("Not enough votes");
   }
 
-  // Reveal and clear all votes
+  // Reveal the card and clear only its votes (keep votes on other cards)
   const updatedBoard = board.map((c, i) =>
     i === cardIndex
       ? { ...c, revealed: true, revealedBy: playerId, votes: {} }
-      : { ...c, votes: {} }
+      : c
   );
 
   const isCorrect = card.team === roomData.currentTeam;
