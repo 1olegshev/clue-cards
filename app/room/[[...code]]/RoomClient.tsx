@@ -7,7 +7,7 @@ import GameBoard from "@/components/GameBoard";
 import ChatLog from "@/components/ChatLog";
 import ClueHistory from "@/components/ClueHistory";
 import TransitionOverlay from "@/components/TransitionOverlay";
-import { useFirestoreRoom } from "@/hooks/useFirestoreRoom";
+import { useRtdbRoom } from "@/hooks/useRtdbRoom";
 import { useGameTimer } from "@/hooks/useGameTimer";
 import { useTransitionOverlays } from "@/hooks/useTransitionOverlays";
 import {
@@ -29,10 +29,9 @@ export default function RoomPage() {
   const playerName = searchParams.get("name") || "";
 
   // Debug logging
-  console.log("RoomClient:", { pathname, roomCode, playerName });
 
   // Custom hooks
-  const room = useFirestoreRoom(roomCode, playerName);
+  const room = useRtdbRoom(roomCode, playerName);
   const timer = useGameTimer(room.gameState, room.handleEndTurn);
   const overlays = useTransitionOverlays(room.gameState);
 

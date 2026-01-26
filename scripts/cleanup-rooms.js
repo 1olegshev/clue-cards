@@ -2,14 +2,23 @@
 /* eslint-disable no-console */
 
 /**
- * Delete rooms older than X hours.
- * Usage: npm run cleanup:rooms -- --hours 24 [--dry-run]
+ * Delete stale rooms from Realtime Database.
+ * 
+ * Deletes rooms that are:
+ * 1. Older than X hours (default 24h), OR
+ * 2. Have all players disconnected (connected: false)
+ * 
+ * Usage:
+ *   npm run cleanup:rooms                    # delete stale rooms (24h cutoff)
+ *   npm run cleanup:rooms -- --hours 4       # delete rooms older than 4h
+ *   npm run cleanup:rooms -- --dry-run       # preview only
+ *   npm run cleanup:rooms -- --disconnected  # only delete rooms where all players disconnected
  */
 
 const fs = require("fs");
 const path = require("path");
 const { initializeApp, applicationDefault } = require("firebase-admin/app");
-const { getFirestore } = require("firebase-admin/firestore");
+const { getDatabase } = require("firebase-admin/database");
 
 function readDefaultProjectId() {
   try {
@@ -24,7 +33,7 @@ function readDefaultProjectId() {
 
 function parseArgs() {
   const args = process.argv.slice(2);
-  const result = { hours: 24, dryRun: false };
+  const result = { hours: 24, dryRun: false, disconnectedOnly: false };
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i];
     if (arg === "--hours" && args[i + 1]) {
@@ -32,32 +41,21 @@ function parseArgs() {
       i += 1;
     } else if (arg === "--dry-run") {
       result.dryRun = true;
+    } else if (arg === "--disconnected") {
+      result.disconnectedOnly = true;
     }
   }
   return result;
 }
 
-async function deleteRoom(db, roomRef) {
-  if (typeof db.recursiveDelete === "function") {
-    await db.recursiveDelete(roomRef);
-    return;
-  }
-
-  const [playersSnap, messagesSnap] = await Promise.all([
-    roomRef.collection("players").get(),
-    roomRef.collection("messages").get(),
-  ]);
-
-  await Promise.all([
-    ...playersSnap.docs.map((doc) => doc.ref.delete()),
-    ...messagesSnap.docs.map((doc) => doc.ref.delete()),
-  ]);
-
-  await roomRef.delete();
+function allPlayersDisconnected(roomData) {
+  const players = roomData.players;
+  if (!players || Object.keys(players).length === 0) return true;
+  return Object.values(players).every((p) => p.connected === false);
 }
 
 async function main() {
-  const { hours, dryRun } = parseArgs();
+  const { hours, dryRun, disconnectedOnly } = parseArgs();
   if (!Number.isFinite(hours) || hours <= 0) {
     console.error("Invalid --hours value. Example: --hours 24");
     process.exit(1);
@@ -69,38 +67,62 @@ async function main() {
     process.exit(1);
   }
 
-  initializeApp({ credential: applicationDefault(), projectId });
-  const db = getFirestore();
+  const databaseURL = process.env.FIREBASE_DATABASE_URL || 
+    `https://${projectId}-default-rtdb.europe-west1.firebasedatabase.app`;
+
+  initializeApp({ credential: applicationDefault(), projectId, databaseURL });
+  const db = getDatabase();
 
   const cutoffMs = Date.now() - hours * 60 * 60 * 1000;
-  const roomsSnap = await db.collection("rooms").get();
+  const roomsSnap = await db.ref("rooms").once("value");
+  const rooms = roomsSnap.val() || {};
 
   let deleted = 0;
   let kept = 0;
 
-  for (const room of roomsSnap.docs) {
-    const data = room.data();
-    const createdAt = data.createdAt?.toMillis?.();
+  for (const [roomId, roomData] of Object.entries(rooms)) {
+    const createdAt = roomData.createdAt;
+    const allDisconnected = allPlayersDisconnected(roomData);
+    const tooOld = createdAt && createdAt < cutoffMs;
+    const noCreatedAt = !createdAt;
 
-    if (!createdAt) {
-      // No createdAt = legacy room, delete it
-      if (!dryRun) await deleteRoom(db, room.ref);
-      deleted += 1;
-      console.log(`[delete] ${room.id} (no createdAt)`);
-      continue;
+    // Determine if should delete
+    let shouldDelete = false;
+    let reason = "";
+
+    if (disconnectedOnly) {
+      // Only delete if all players disconnected
+      if (allDisconnected) {
+        shouldDelete = true;
+        reason = "all players disconnected";
+      }
+    } else {
+      // Delete if: no createdAt, too old, OR all disconnected
+      if (noCreatedAt) {
+        shouldDelete = true;
+        reason = "no createdAt";
+      } else if (allDisconnected) {
+        shouldDelete = true;
+        reason = "all players disconnected";
+      } else if (tooOld) {
+        shouldDelete = true;
+        reason = `older than ${hours}h`;
+      }
     }
 
-    if (createdAt < cutoffMs) {
-      if (!dryRun) await deleteRoom(db, room.ref);
+    if (shouldDelete) {
+      if (!dryRun) await db.ref(`rooms/${roomId}`).remove();
       deleted += 1;
-      console.log(`[delete] ${room.id} (created ${Math.round((Date.now() - createdAt) / 3600000)}h ago)`);
+      console.log(`[delete] ${roomId} (${reason})`);
     } else {
       kept += 1;
-      console.log(`[keep] ${room.id} (created ${Math.round((Date.now() - createdAt) / 60000)}m ago)`);
+      const age = createdAt ? `${Math.round((Date.now() - createdAt) / 60000)}m old` : "unknown age";
+      const status = allDisconnected ? "all disconnected" : "has connected players";
+      console.log(`[keep] ${roomId} (${age}, ${status})`);
     }
   }
 
-  console.log(`\nRooms scanned: ${roomsSnap.size}`);
+  console.log(`\nRooms scanned: ${Object.keys(rooms).length}`);
   console.log(`Deleted: ${deleted}`);
   console.log(`Kept: ${kept}`);
   if (dryRun) console.log("(dry run - no actual deletes)");

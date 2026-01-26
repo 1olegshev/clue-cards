@@ -1,33 +1,64 @@
 ## Game State
 
-Core state lives in `shared/types.ts` and is stored in Firestore.
+Core state lives in `shared/types.ts` and is stored in Firebase Realtime Database.
 
-### Firestore Data Model
+### Realtime Database Data Model
 
-```
-rooms/{roomCode}
-  ├── ownerId, currentTeam, startingTeam, currentClue, remainingGuesses
-  ├── turnStartTime, turnDuration, gameStarted, gameOver, winner
-  ├── paused, pauseReason, pausedForTeam
-  ├── board[]   (25 cards: word, team, revealed, revealedBy, votes[])
-  ├── createdAt, lastActivity
-  │
-  ├── players/{playerId}
-  │     └── name, team, role, connected, lastSeen
-  │
-  └── messages/{messageId}
-        └── playerId, playerName, message, timestamp, type
+```json
+{
+  "rooms": {
+    "{roomCode}": {
+      "ownerId": "...",
+      "currentTeam": "red|blue",
+      "startingTeam": "red|blue",
+      "currentClue": { "word": "...", "count": 3 },
+      "remainingGuesses": 3,
+      "turnStartTime": 1234567890,
+      "turnDuration": 60,
+      "gameStarted": false,
+      "gameOver": false,
+      "winner": null,
+      "paused": false,
+      "pauseReason": null,
+      "pausedForTeam": null,
+      "createdAt": 1234567890,
+      "board": [
+        { "word": "...", "team": "red", "revealed": false, "votes": {} }
+      ],
+      "players": {
+        "{playerId}": {
+          "name": "...",
+          "team": "red|blue",
+          "role": "spymaster|operative",
+          "connected": true,
+          "lastSeen": 1234567890
+        }
+      },
+      "messages": {
+        "{messageId}": {
+          "playerId": "...",
+          "playerName": "...",
+          "message": "...",
+          "timestamp": 1234567890,
+          "type": "clue|chat|system"
+        }
+      }
+    }
+  }
+}
 ```
 
 ### Room Cleanup
 
-**Automatic (best-effort)**:
-- When a player explicitly leaves and is the last connected → room deleted
-- Unreliable because most users close tabs instead of clicking "Leave"
+**Automatic via onDisconnect**:
+- When a player joins, `onDisconnect()` is set to mark them as disconnected
+- Firebase server detects connection loss (tab close, network drop, etc.)
+- When last player leaves/disconnects, room is deleted
 
-**Manual cleanup**:
+This is **reliable** because it's server-side — no client cooperation needed.
+
+**Backup manual cleanup**:
 Run `npm run cleanup:rooms -- --hours 24` to delete rooms older than 24 hours.
-Add `--dry-run` to preview. Default is 24 hours.
 Requires Firebase Admin credentials (`gcloud auth application-default login`).
 
 ### Turn Flow
