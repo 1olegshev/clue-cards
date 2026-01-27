@@ -50,9 +50,11 @@ export function isValidClue(word: string, boardWords: string[]): boolean {
   // Exact match check
   if (boardWordsSet.has(normalized)) return false;
 
-  // Check if clue is a prefix/suffix of any board word or vice versa
-  // (Only blocks meaningful derivations like "farm"/"farmer", not coincidental
-  // substrings like "war" in "dwarf")
+  // Check if clue is a prefix/suffix of any board word or vice versa.
+  // This blocks meaningful derivations like "farm"/"farmer", but allows
+  // coincidental substrings like "war" in "dwarf".
+  // Note: This also handles plural variants (dog/dogs, bench/benches) since
+  // adding/removing S or ES creates a prefix/suffix relationship.
   for (const boardWord of boardWordsSet) {
     // Clue is prefix or suffix of board word
     if (boardWord.startsWith(normalized) || boardWord.endsWith(normalized)) {
@@ -60,20 +62,6 @@ export function isValidClue(word: string, boardWords: string[]): boolean {
     }
     // Board word is prefix or suffix of clue
     if (normalized.startsWith(boardWord) || normalized.endsWith(boardWord)) {
-      return false;
-    }
-  }
-
-  // Check for common word variants (simple pluralization)
-  const pluralVariants = [
-    normalized + "S",
-    normalized + "ES",
-    normalized.slice(0, -1), // Remove trailing S
-    normalized.slice(0, -2), // Remove trailing ES
-  ];
-
-  for (const variant of pluralVariants) {
-    if (boardWordsSet.has(variant)) {
       return false;
     }
   }

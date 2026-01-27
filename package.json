@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run test:run && next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
@@ -25,11 +25,9 @@
     "cleanup:rooms": "node scripts/cleanup-rooms.js"
   },
   "lint-staged": {
-    "shared/**/*.ts": [
-      "npm run test:run --"
-    ],
-    "{app,components,hooks,lib}/**/*.{ts,tsx}": [
-      "bash -c 'npm run typecheck'"
+    "*.{ts,tsx}": [
+      "npm run typecheck",
+      "npm run test:run"
     ]
   },
   "dependencies": {
