@@ -170,6 +170,7 @@ export default function RoomPage() {
               canGiveClue={canGiveClue}
               clueAnimating={overlays.clueAnimating}
               players={room.players}
+              showGameOverOverlay={overlays.showGameOver}
               onEndTurn={room.handleEndTurn}
               onEndGame={room.handleEndGame}
               onResumeGame={room.handleResumeGame}
@@ -178,7 +179,7 @@ export default function RoomPage() {
             />
 
             {/* Game Over - Show Teams for Reassignment (above board) */}
-            {room.gameState.gameOver && (
+            {room.gameState.gameOver && !overlays.showGameOver && (
               <div className="mb-4">
                 <TeamLobby
                   players={room.players}

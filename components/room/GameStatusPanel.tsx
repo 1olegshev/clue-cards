@@ -11,6 +11,7 @@ interface GameStatusPanelProps {
   canGiveClue: boolean;
   clueAnimating: boolean;
   players: Player[];
+  showGameOverOverlay?: boolean;
   onEndTurn: () => void;
   onEndGame: () => void;
   onResumeGame: () => void;
@@ -26,6 +27,7 @@ export default function GameStatusPanel({
   canGiveClue,
   clueAnimating,
   players,
+  showGameOverOverlay = false,
   onEndTurn,
   onEndGame,
   onResumeGame,
@@ -201,7 +203,7 @@ export default function GameStatusPanel({
         </div>
       )}
       
-      {gameState.gameOver && (
+      {gameState.gameOver && !showGameOverOverlay && (
         <div data-testid="game-over-panel" className="bg-white dark:bg-gray-800 border-2 border-yellow-400 rounded-lg p-6">
           <h3 data-testid="game-winner-text" className="text-2xl font-bold text-center mb-6">
             🎮 Game Over! {gameState.winner?.toUpperCase()} Team Wins!
