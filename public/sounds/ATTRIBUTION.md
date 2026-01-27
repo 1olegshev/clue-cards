@@ -12,6 +12,10 @@ Sound effects in this folder are sourced from free, royalty-free libraries.
 | `tick.mp3` | [BigSoundBank](https://bigsoundbank.com) | CC0 (Public Domain) | Thermostat click |
 | `tick-urgent.mp3` | [BigSoundBank](https://bigsoundbank.com) | CC0 (Public Domain) | Mechanical alarm clock tic-tac |
 
+## Background Music
+
+See `music/ATTRIBUTION.md` for background music credits. All music is CC0 (Public Domain) from OpenGameArt.org.
+
 ## Licenses
 
 - **Mixkit License**: Free for commercial and personal use without attribution. [Details](https://mixkit.co/license/#sfxFree)

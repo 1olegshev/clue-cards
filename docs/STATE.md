@@ -102,6 +102,8 @@ Player identity uses **Firebase Anonymous Authentication**. Each browser session
 | `cluecards_avatar` | Player's selected emoji avatar | Random from preset list |
 | `cluecards_sound_volume` | Sound effects volume (0-1) | `0.5` |
 | `cluecards_sound_muted` | Whether sounds are muted | `false` |
+| `cluecards_music_volume` | Background music volume (0-1) | `0.3` |
+| `cluecards_music_enabled` | Whether music is enabled | `false` |
 | `cluecards-theme` | UI theme preference | `system` |
 
 **Note:** Keys are defined in `shared/constants.ts` (except theme which is in `ThemeProvider.tsx`).
@@ -138,25 +140,37 @@ Input validation utilities in `shared/validation.ts`:
 
 All sounds use audio files via `use-sound`/Howler.js for realistic, high-quality playback.
 
-**Audio Files** (`/public/sounds/`):
+**Sound Effects** (`/public/sounds/`):
 - `game-start.mp3` — Fantasy success notification when game begins
 - `turn-change.mp3` — Quick software tone when turn switches teams
 - `game-over.mp3` — Crowd applause celebration when a team wins
 - `tick.mp3` — Soft click sound every 2s in the last 30 seconds
 - `tick-urgent.mp3` — Fast mechanical alarm clock tic-tac every 0.5s in the last 10 seconds
 
+**Background Music** (`/public/sounds/music/`):
+- `lobby.mp3` — Chill lo-fi for lobby waiting
+- `game-30s.mp3` — Upbeat lo-fi for 30s turn games
+- `game-60s.mp3` — Balanced lo-fi for 60s turn games
+- `game-90s.mp3` — Relaxed lo-fi for 90s turn games
+- `victory.mp3` — Happy lo-fi for game end screen
+
+Music auto-switches based on game state (lobby → game → victory).
+
 **Sound Sources:**
-Audio files sourced from [Mixkit](https://mixkit.co/free-sound-effects/) under the Mixkit License (free for commercial use).
+- Sound effects: [Mixkit](https://mixkit.co/free-sound-effects/) and [BigSoundBank](https://bigsoundbank.com)
+- Background music: [OpenGameArt.org](https://opengameart.org) (CC0)
 
 **Accessibility:**
-- Respects `prefers-reduced-motion` OS setting (disables all sounds when set)
+- Respects `prefers-reduced-motion` OS setting (disables all sounds and music when set)
 - Volume and mute settings persist across sessions via localStorage
+- Separate controls for sound effects and background music
 
 **Sound Architecture:**
-- `SoundContext` (`contexts/SoundContext.tsx`) — Global provider for sound state and playback
+- `SoundContext` (`contexts/SoundContext.tsx`) — Global provider for sound/music state and playback
 - `useTimerSound` hook — Handles timer tick logic based on time remaining
 - `usePrefersReducedMotion` hook — Detects OS accessibility preference
-- `use-sound` package — Wrapper around Howler.js for audio file playback
+- `use-sound` package — Wrapper around Howler.js for sound effect playback
+- `howler` package — Direct use for looping background music
 
 ## Application Architecture
 

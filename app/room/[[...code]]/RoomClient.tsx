@@ -8,6 +8,7 @@ import { useGameTimer } from "@/hooks/useGameTimer";
 import { useTransitionOverlays } from "@/hooks/useTransitionOverlays";
 import { useTimerSound } from "@/hooks/useTimerSound";
 import { useRoomDerivedState } from "@/hooks/useRoomDerivedState";
+import { useSoundContextOptional, type MusicTrack } from "@/contexts/SoundContext";
 import { LOCAL_STORAGE_AVATAR_KEY, getRandomAvatar } from "@/shared/constants";
 import {
   RoomHeader,
@@ -52,6 +53,36 @@ export default function RoomPage() {
     timeRemaining: timer.timeRemaining,
     isPaused: room.gameState?.paused,
   });
+
+  // Background music - changes based on game state
+  const soundContext = useSoundContextOptional();
+  useEffect(() => {
+    if (!soundContext) return;
+    
+    const gameState = room.gameState;
+    let track: MusicTrack = null;
+    
+    if (!gameState) {
+      track = null;
+    } else if (gameState.gameOver) {
+      track = "victory";
+    } else if (gameState.gameStarted) {
+      // Select track based on turn duration
+      const duration = gameState.turnDuration || 60;
+      if (duration <= 30) {
+        track = "game-30s";
+      } else if (duration <= 60) {
+        track = "game-60s";
+      } else {
+        track = "game-90s";
+      }
+    } else {
+      // In lobby
+      track = "lobby";
+    }
+    
+    soundContext.setMusicTrack(track);
+  }, [room.gameState?.gameStarted, room.gameState?.gameOver, room.gameState?.turnDuration, soundContext]);
 
   // Early returns for special states
   if (room.roomClosedReason) {
