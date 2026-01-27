@@ -151,9 +151,20 @@ Input validation utilities in `shared/validation.ts`:
 | `sanitizePlayerName(name)` | Trim and truncate player name |
 | `sanitizeClue(clue)` | Trim and truncate clue word |
 | `sanitizeChatMessage(msg)` | Trim and truncate chat message |
+| `sanitizeChatMessageWithCensor(msg)` | Trim, truncate, and censor profanity in chat message |
 | `isValidPlayerName(name)` | Check if name is non-empty and within limit |
 | `isValidClueFormat(clue)` | Check if clue is single word within limit |
 | `isValidChatMessage(msg)` | Check if message is non-empty and within limit |
+| `validatePlayerName(name)` | Validate name with detailed errors (checks length, profanity) |
+| `validateClueWord(clue)` | Validate clue with detailed errors (checks format, length, profanity) |
+
+**Profanity Filtering** (`shared/profanity.ts`):
+- Uses `bad-words-next` library with English dictionary
+- **Blocking mode** (`containsProfanity()`): Used for player names and clues — blocks input entirely if profanity detected
+- **Censoring mode** (`censorProfanity()`): Used for chat messages — replaces profane words with `***` but allows the message
+- Case-insensitive detection
+- Player names and clues are rejected with error message "Please choose a different name/clue"
+- Chat messages are automatically censored before being sent
 
 ### Sound System
 
@@ -282,6 +293,7 @@ The `database.rules.json` file enforces server-side validation:
 - Duplicate clue giver prevention
 - Vote threshold logic
 - Teams ready validation
+- Profanity filtering (player names, clues blocked; chat messages censored)
 
 ## Testing
 
