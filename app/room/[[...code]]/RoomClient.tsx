@@ -179,18 +179,20 @@ export default function RoomPage() {
 
             {/* Game Over - Show Teams for Reassignment (above board) */}
             {room.gameState.gameOver && (
-              <TeamLobby
-                players={room.players}
-                currentPlayer={room.currentPlayer}
-                isRoomOwner={isRoomOwner}
-                gameState={room.gameState}
-                onSetRole={room.handleSetLobbyRole}
-                onRandomize={room.handleRandomizeTeams}
-                onStartGame={room.handleStartGame}
-                onTurnDurationChange={room.handleTurnDurationChange}
-                onWordPackChange={room.handleWordPackChange}
-                showControls={true}
-              />
+              <div className="mb-4">
+                <TeamLobby
+                  players={room.players}
+                  currentPlayer={room.currentPlayer}
+                  isRoomOwner={isRoomOwner}
+                  gameState={room.gameState}
+                  onSetRole={room.handleSetLobbyRole}
+                  onRandomize={room.handleRandomizeTeams}
+                  onStartGame={room.handleStartGame}
+                  onTurnDurationChange={room.handleTurnDurationChange}
+                  onWordPackChange={room.handleWordPackChange}
+                  showControls={true}
+                />
+              </div>
             )}
 
             {/* Board and Chat */}
