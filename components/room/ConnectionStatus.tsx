@@ -4,6 +4,15 @@ interface ConnectionStatusProps {
 }
 
 export default function ConnectionStatus({ isConnecting, connectionError }: ConnectionStatusProps) {
+  const isNameTaken = connectionError === "Name already taken";
+  
+  const handleChooseDifferentName = () => {
+    // Remove name param from URL to show the name form again
+    const url = new URL(window.location.href);
+    url.searchParams.delete("name");
+    window.location.href = url.toString();
+  };
+
   return (
     <main className="min-h-screen flex items-center justify-center p-4">
       <div className="text-center max-w-md">
@@ -18,14 +27,32 @@ export default function ConnectionStatus({ isConnecting, connectionError }: Conn
             <svg className="w-12 h-12 text-red-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <h2 className="text-xl font-bold text-red-800 dark:text-red-400 mb-2">Connection Failed</h2>
-            <p className="text-red-700 dark:text-red-300 mb-4">{connectionError}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="bg-red-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-700 transition-all"
-            >
-              Retry
-            </button>
+            <h2 className="text-xl font-bold text-red-800 dark:text-red-400 mb-2">
+              {isNameTaken ? "Name Already Taken" : "Connection Failed"}
+            </h2>
+            <p className="text-red-700 dark:text-red-300 mb-4">
+              {isNameTaken 
+                ? "Someone in this room is already using that name. Please choose a different one."
+                : connectionError
+              }
+            </p>
+            <div className="flex gap-3 justify-center">
+              {isNameTaken ? (
+                <button
+                  onClick={handleChooseDifferentName}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-all"
+                >
+                  Choose Different Name
+                </button>
+              ) : (
+                <button
+                  onClick={() => window.location.reload()}
+                  className="bg-red-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-700 transition-all"
+                >
+                  Retry
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>

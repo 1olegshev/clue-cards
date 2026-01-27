@@ -109,6 +109,7 @@ export async function joinRoom(
   const db = getDb();
   const roomRef = ref(db, `rooms/${roomCode}`);
   const playerRef = ref(db, `rooms/${roomCode}/players/${playerId}`);
+  const playersRef = ref(db, `rooms/${roomCode}/players`);
 
   const roomSnap = await get(roomRef);
 
@@ -133,16 +134,40 @@ export async function joinRoom(
       createdAt: serverTimestamp(),
       board: [],
     });
+  } else {
+    // Room exists - check for duplicate names
+    const playersSnap = await get(playersRef);
+    const players = (playersSnap.val() || {}) as Record<string, PlayerData>;
+    
+    // Check if another connected player has the same name
+    const duplicateName = Object.entries(players).find(
+      ([id, p]) => id !== playerId && p.name.toLowerCase() === playerName.toLowerCase() && p.connected
+    );
+    if (duplicateName) {
+      throw new Error("Name already taken");
+    }
   }
 
-  // Set player data
-  await set(playerRef, {
-    name: playerName,
-    team: null,
-    role: null,
-    connected: true,
-    lastSeen: serverTimestamp(),
-  });
+  // Check if this player already exists (rejoining)
+  const existingPlayerSnap = await get(playerRef);
+  
+  if (existingPlayerSnap.exists()) {
+    // Rejoin - preserve team/role, update name and connection status
+    await update(playerRef, {
+      name: playerName,
+      connected: true,
+      lastSeen: serverTimestamp(),
+    });
+  } else {
+    // New player
+    await set(playerRef, {
+      name: playerName,
+      team: null,
+      role: null,
+      connected: true,
+      lastSeen: serverTimestamp(),
+    });
+  }
 
   // Set up initial onDisconnect - marks player as disconnected
   // This will be updated dynamically when player count changes
