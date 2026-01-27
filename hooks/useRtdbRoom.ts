@@ -72,6 +72,12 @@ export function useRtdbRoom(
 
   // Set up leaveRoom callback for Navbar
   useEffect(() => {
+    console.log("[useRtdbRoom] Setting up leaveRoom callback", { 
+      roomCode, 
+      uid: connection.uid?.slice(0, 8),
+      hasUid: !!connection.uid 
+    });
+    
     const leaveRoomFn = async () => {
       console.log("[Room] leaveRoom called", { uid: connection.uid, roomCode });
       if (connection.uid && roomCode) {
@@ -82,7 +88,9 @@ export function useRtdbRoom(
       }
     };
     setLeaveRoom(leaveRoomFn);
+    
     return () => {
+      console.log("[useRtdbRoom] Cleanup: clearing leaveRoom callback");
       setLeaveRoom(async () => {});
     };
   }, [roomCode, connection.uid, setLeaveRoom]);
