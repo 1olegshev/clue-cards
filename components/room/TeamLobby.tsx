@@ -287,7 +287,10 @@ export default function TeamLobby({
             <h3 className="text-lg font-semibold mb-3">All Players</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {players.map((player) => (
-                <div key={player.id} className={`rounded-lg px-3 py-2 text-base border min-w-0 ${
+                <div 
+                  key={player.id} 
+                  data-testid={`lobby-player-${player.name}`}
+                  className={`rounded-lg px-3 py-2 text-base border min-w-0 ${
                   player.id === currentPlayer?.id
                     ? "bg-yellow-50 dark:bg-yellow-900/30 border-yellow-400 dark:border-yellow-600"
                     : "bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"

@@ -32,10 +32,10 @@ async function getTeamCards(clueGiverPage: Page, team: 'red' | 'blue'): Promise<
 
 /**
  * Helper: Wait for a player to appear in the lobby
- * Uses longer timeout for production runs where Firebase latency is higher
+ * Uses test ID for reliable detection across Firebase sync latency
  */
-async function waitForPlayerVisible(page: Page, playerName: string, timeout = 15000) {
-  await expect(page.getByText(playerName).first()).toBeVisible({ timeout });
+async function waitForPlayerVisible(page: Page, playerName: string, timeout = 20000) {
+  await expect(page.getByTestId(`lobby-player-${playerName}`)).toBeVisible({ timeout });
 }
 
 /**
@@ -48,7 +48,7 @@ async function waitForClueDisplayed(page: Page, clueWord: string, timeout = 5000
 
 test.describe('Full Game Flow', () => {
   test('complete game flow with 4 players', async ({ context }) => {
-    test.setTimeout(90000); // 90 seconds for multi-player test
+    test.setTimeout(120000); // 2 minutes for multi-player test with Firebase latency
     // Create 4 browser pages for 4 players
     const pages = await Promise.all([
       context.newPage(),
@@ -94,16 +94,19 @@ test.describe('Full Game Flow', () => {
     }
 
     // ========================================
-    // Step 3: Assign teams manually
+    // Step 3: Assign teams manually (sequential to avoid Firebase race)
     // ========================================
     // Player 0 (RedClue) - joins red clue giver
     await pages[0].getByTestId('lobby-join-red-clueGiver').click();
+    await pages[0].waitForTimeout(500); // Let Firebase sync
     
     // Player 1 (RedGuess) - joins red guesser
     await pages[1].getByTestId('lobby-join-red-guesser').click();
+    await pages[1].waitForTimeout(500);
     
     // Player 2 (BlueClue) - joins blue clue giver
     await pages[2].getByTestId('lobby-join-blue-clueGiver').click();
+    await pages[2].waitForTimeout(500);
     
     // Player 3 (BlueGuess) - joins blue guesser
     await pages[3].getByTestId('lobby-join-blue-guesser').click();
@@ -111,7 +114,7 @@ test.describe('Full Game Flow', () => {
     // Wait for start button to be enabled (indicates all roles assigned)
     // Use longer timeout for production where Firebase sync takes longer
     const startButton = pages[0].getByTestId('lobby-start-btn');
-    await expect(startButton).toBeEnabled({ timeout: 15000 });
+    await expect(startButton).toBeEnabled({ timeout: 20000 });
 
     // ========================================
     // Step 4: Owner starts the game
@@ -190,7 +193,7 @@ test.describe('Full Game Flow', () => {
   });
 
   test('randomize teams and start game', async ({ context }) => {
-    test.setTimeout(90000); // 90 seconds for multi-player test
+    test.setTimeout(120000); // 2 minutes for multi-player test with Firebase latency
     // Create 4 browser pages
     const pages = await Promise.all([
       context.newPage(),
@@ -277,16 +280,19 @@ test.describe('Full Game Flow', () => {
     }
 
     // ========================================
-    // Assign teams
+    // Assign teams (sequential to avoid Firebase race)
     // ========================================
     await pages[0].getByTestId('lobby-join-red-clueGiver').click();
+    await pages[0].waitForTimeout(500);
     await pages[1].getByTestId('lobby-join-red-guesser').click();
+    await pages[1].waitForTimeout(500);
     await pages[2].getByTestId('lobby-join-blue-clueGiver').click();
+    await pages[2].waitForTimeout(500);
     await pages[3].getByTestId('lobby-join-blue-guesser').click();
     
     // Wait for start button to be enabled (longer timeout for production)
     const startButton = pages[0].getByTestId('lobby-start-btn');
-    await expect(startButton).toBeEnabled({ timeout: 15000 });
+    await expect(startButton).toBeEnabled({ timeout: 20000 });
 
     // ========================================
     // Start game
