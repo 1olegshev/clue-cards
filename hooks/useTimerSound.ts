@@ -99,12 +99,20 @@ export function useTimerSound({
 
     currentModeRef.current = targetMode;
 
-    // Play first tick immediately
+    // Urgent tick sound is a long clip (20s). Play once and let it run.
+    if (isUrgent) {
+      if (soundContextRef.current?.soundEnabled) {
+        soundContextRef.current.playSound(soundName);
+      }
+      return;
+    }
+
+    // Play first tick immediately (normal mode)
     if (soundContextRef.current?.soundEnabled) {
       soundContextRef.current.playSound(soundName);
     }
 
-    // Set up interval for subsequent ticks
+    // Set up interval for subsequent ticks (normal mode)
     intervalRef.current = setInterval(() => {
       if (soundContextRef.current?.soundEnabled) {
         soundContextRef.current.playSound(soundName);

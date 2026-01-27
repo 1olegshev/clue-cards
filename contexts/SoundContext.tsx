@@ -23,18 +23,19 @@ let audioContextUnlocked = false;
  * Unlock the Web Audio context on first user interaction.
  * Browsers block audio playback until user interacts with the page.
  */
-function unlockAudioContext() {
-  if (audioContextUnlocked) return;
-  
+function unlockAudioContext(): Promise<void> {
+  if (audioContextUnlocked) return Promise.resolve();
+
   // Howler exposes the audio context - resume it
   const ctx = Howler.ctx;
   if (ctx && ctx.state === "suspended") {
-    ctx.resume().then(() => {
+    return ctx.resume().then(() => {
       audioContextUnlocked = true;
     });
-  } else {
-    audioContextUnlocked = true;
   }
+
+  audioContextUnlocked = true;
+  return Promise.resolve();
 }
 
 interface SoundContextValue {
@@ -153,8 +154,9 @@ export function SoundProvider({ children }: { children: ReactNode }) {
     const events = ["click", "touchstart", "keydown"];
     
     const handleInteraction = () => {
-      unlockAudioContext();
-      setAudioUnlocked(true);
+      unlockAudioContext().then(() => {
+        setAudioUnlocked(true);
+      });
       // Remove listeners after first interaction
       events.forEach(event => {
         document.removeEventListener(event, handleInteraction);
@@ -249,7 +251,7 @@ export function SoundProvider({ children }: { children: ReactNode }) {
     }
 
     // Don't play if no track, music disabled, not hydrated, or user prefers reduced motion
-    if (!currentTrack || !musicEnabled || !isHydrated || prefersReducedMotion) {
+    if (!currentTrack || !musicEnabled || !isHydrated || prefersReducedMotion || !audioUnlocked) {
       return;
     }
 
