@@ -68,6 +68,10 @@ export function useTransitionOverlays(
     if (gameState.gameOver && !prevGameOverRef.current) {
       const winner = gameState.winner;
       if (winner === "red" || winner === "blue") {
+        // Dismiss any other overlays first
+        setShowTurnChange(false);
+        setShowGameStart(false);
+        // Show game over
         setTransitionTeam(winner);
         setShowGameOver(true);
         playSound("gameOver");
