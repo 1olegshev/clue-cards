@@ -184,13 +184,12 @@ export default function GameBoard({
                   ? "cursor-default"
                   : "cursor-pointer hover:scale-105 active:scale-95"
                 }
-                ${card.revealed && !isClueGiver ? "line-through opacity-75" : ""}
                 ${hasVoted ? "ring-2 ring-blue-500" : ""}
                 ${isAnimating ? "card-flip" : ""}
               `}
             >
               <div className="flex items-center justify-center h-full text-center">
-                {card.revealed && isClueGiver ? renderCardBackIcon(card) : card.word}
+                {card.revealed ? renderCardBackIcon(card) : card.word}
               </div>
             </button>
             {votes.length > 0 && !card.revealed && (
