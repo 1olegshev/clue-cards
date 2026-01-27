@@ -48,15 +48,16 @@ function getDb() {
 }
 
 // Check if team can play (for pause logic)
+// connected !== false treats undefined as connected (backwards compatible)
 function checkPause(
   players: Record<string, PlayerData>,
   team: "red" | "blue",
   hasClue: boolean
 ): { paused: boolean; reason: PauseReason; team: Team | null } {
   const teamPlayers = Object.values(players).filter((p) => p.team === team);
-  const hasClueGiver = teamPlayers.some((p) => p.role === "clueGiver" && p.connected);
-  const hasGuesser = teamPlayers.some((p) => p.role === "guesser" && p.connected);
-  const anyConnected = teamPlayers.some((p) => p.connected);
+  const hasClueGiver = teamPlayers.some((p) => p.role === "clueGiver" && p.connected !== false);
+  const hasGuesser = teamPlayers.some((p) => p.role === "guesser" && p.connected !== false);
+  const anyConnected = teamPlayers.some((p) => p.connected !== false);
 
   if (!anyConnected) return { paused: true, reason: "teamDisconnected", team };
   if (!hasClue && !hasClueGiver) return { paused: true, reason: "clueGiverDisconnected", team };
@@ -245,8 +246,9 @@ export async function reassignOwnerIfNeeded(
   const players = playersSnap.val() as Record<string, PlayerData>;
   
   // Check if current owner is disconnected
+  // connected !== false treats undefined as connected (backwards compatible)
   const currentOwner = players[roomData.ownerId];
-  if (currentOwner?.connected) {
+  if (currentOwner?.connected !== false) {
     return { newOwnerName: null, withinGracePeriod: false, gracePeriodRemainingMs: 0 };
   }
   
@@ -261,7 +263,7 @@ export async function reassignOwnerIfNeeded(
   }
   
   // Find first connected player to become new owner
-  const newOwnerEntry = Object.entries(players).find(([, p]) => p.connected);
+  const newOwnerEntry = Object.entries(players).find(([, p]) => p.connected !== false);
   if (!newOwnerEntry) {
     return { newOwnerName: null, withinGracePeriod: false, gracePeriodRemainingMs: 0 };
   }
@@ -304,8 +306,9 @@ export async function leaveRoom(roomCode: string, playerId: string): Promise<voi
   }
 
   const players = playersSnap.val() as Record<string, PlayerData>;
+  // connected !== false treats undefined as connected (backwards compatible)
   const connectedCount = Object.entries(players).filter(
-    ([id, p]) => id !== playerId && p.connected
+    ([id, p]) => id !== playerId && p.connected !== false
   ).length;
 
   if (connectedCount === 0) {

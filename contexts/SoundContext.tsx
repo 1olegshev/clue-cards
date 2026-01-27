@@ -143,12 +143,21 @@ const MUSIC_TRACKS: Record<Exclude<MusicTrack, null>, string> = {
 // Session storage key for audio unlock state (survives page reloads within session)
 const SESSION_AUDIO_UNLOCKED_KEY = "cluecards_audio_unlocked";
 
+// Check sessionStorage synchronously for SSR safety
+function getInitialAudioUnlocked(): boolean {
+  if (typeof window !== "undefined") {
+    return sessionStorage.getItem(SESSION_AUDIO_UNLOCKED_KEY) === "true";
+  }
+  return false;
+}
+
 export function SoundProvider({ children }: { children: ReactNode }) {
   // Sound effects state
   const [volume, setVolumeState] = useState(0.5);
   const [isMuted, setIsMutedState] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
-  const [audioUnlocked, setAudioUnlocked] = useState(false);
+  // Initialize from sessionStorage - if user interacted before, flag is already set
+  const [audioUnlocked, setAudioUnlocked] = useState(getInitialAudioUnlocked);
   const prefersReducedMotion = usePrefersReducedMotion();
 
   // Music state (volume derived from master volume)
@@ -159,18 +168,14 @@ export function SoundProvider({ children }: { children: ReactNode }) {
   // Computed music volume (30% of master volume)
   const musicVolume = volume * MUSIC_VOLUME_RATIO;
 
-  // Check sessionStorage on mount - user may have interacted before page reload
-  useEffect(() => {
-    if (typeof window !== "undefined" && sessionStorage.getItem(SESSION_AUDIO_UNLOCKED_KEY) === "true") {
-      setAudioUnlocked(true);
-      unlockAudioContext();
-    }
-  }, []);
-
   // Unlock audio context on first user interaction (browser autoplay policy)
+  // Also proactively resume if already unlocked from sessionStorage
   useEffect(() => {
-    // Skip if already unlocked (from sessionStorage)
-    if (audioUnlocked) return;
+    // If already unlocked from sessionStorage, just resume audio context
+    if (audioUnlocked) {
+      unlockAudioContext();
+      return;
+    }
 
     const events = ["click", "touchstart", "keydown"];
     
@@ -178,9 +183,7 @@ export function SoundProvider({ children }: { children: ReactNode }) {
       // Set unlocked and persist to sessionStorage (survives page reloads)
       setAudioUnlocked(true);
       sessionStorage.setItem(SESSION_AUDIO_UNLOCKED_KEY, "true");
-      // Also proactively try to resume audio context (best effort, don't wait)
       unlockAudioContext();
-      // Remove listeners after first interaction
       events.forEach(event => {
         document.removeEventListener(event, handleInteraction);
       });
