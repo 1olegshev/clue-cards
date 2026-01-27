@@ -19,7 +19,7 @@ export default function ChatLog({ messages, players = [] }: ChatLogProps) {
   };
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 h-64 overflow-y-auto scrollbar-thin">
+    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 h-64 overflow-y-scroll scrollbar-thin">
       <h3 className="font-semibold mb-3">Chat</h3>
       <div className="space-y-2">
         {chatMessages.length === 0 ? (

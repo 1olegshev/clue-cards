@@ -10,7 +10,7 @@ export default function ClueHistory({ clues }: ClueHistoryProps) {
   const clueMessages = clues.filter((msg) => msg.type === "clue");
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 h-48 overflow-y-auto scrollbar-thin">
+    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 h-48 overflow-y-scroll scrollbar-thin">
       <h3 className="font-semibold mb-3">Clue History</h3>
       <div className="space-y-2">
         {clueMessages.length === 0 ? (
