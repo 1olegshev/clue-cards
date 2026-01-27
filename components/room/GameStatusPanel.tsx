@@ -73,12 +73,16 @@ export default function GameStatusPanel({
           {/* Score display */}
           <div className="flex items-center gap-2">
             <span className={`px-3 py-1 rounded font-bold ${
-              gameState.currentTeam === "red" ? "bg-red-team text-white" : "bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200"
+              !gameState.gameOver && gameState.currentTeam === "red" 
+                ? "bg-red-team text-white" 
+                : "bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200"
             }`}>
               Red: {redRemaining}
             </span>
             <span className={`px-3 py-1 rounded font-bold ${
-              gameState.currentTeam === "blue" ? "bg-blue-team text-white" : "bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200"
+              !gameState.gameOver && gameState.currentTeam === "blue" 
+                ? "bg-blue-team text-white" 
+                : "bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200"
             }`}>
               Blue: {blueRemaining}
             </span>
