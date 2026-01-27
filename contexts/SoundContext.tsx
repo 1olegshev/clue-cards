@@ -161,9 +161,11 @@ export function SoundProvider({ children }: { children: ReactNode }) {
     const events = ["click", "touchstart", "keydown"];
     
     const handleInteraction = () => {
-      unlockAudioContext().then(() => {
-        setAudioUnlocked(true);
-      });
+      // Set unlocked immediately - user has interacted with the page
+      // Howler will handle actual audio context resumption when we play
+      setAudioUnlocked(true);
+      // Also proactively try to resume audio context (best effort, don't wait)
+      unlockAudioContext();
       // Remove listeners after first interaction
       events.forEach(event => {
         document.removeEventListener(event, handleInteraction);
