@@ -1,10 +1,11 @@
 /**
  * Room connection hook - manages real-time subscriptions and presence.
  * Uses onDisconnect for reliable presence detection.
+ * Monitors .info/connected to restore presence after reconnection.
  */
 
 import { useEffect, useState, useRef } from "react";
-import { ref, onValue, query, orderByChild, limitToLast, off, DatabaseReference } from "firebase/database";
+import { ref, onValue, query, orderByChild, limitToLast, off, DatabaseReference, update, serverTimestamp } from "firebase/database";
 import { getDatabase } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 import * as actions from "@/lib/rtdb-actions";
@@ -42,6 +43,7 @@ export function useRoomConnection(
   const roomDataRef = useRef<FirebaseRoomData | null>(null);
   const playersDataRef = useRef<Record<string, PlayerData> | null>(null);
   const disconnectRefRef = useRef<DatabaseReference | null>(null);
+  const wasConnectedRef = useRef<boolean | null>(null);
 
   // Main effect: join room and set up listeners
   useEffect(() => {
@@ -66,6 +68,7 @@ export function useRoomConnection(
     const roomRef = ref(db, `rooms/${roomCode}`);
     const playersRef = ref(db, `rooms/${roomCode}/players`);
     const messagesRef = ref(db, `rooms/${roomCode}/messages`);
+    const connectedRef = ref(db, ".info/connected");
 
     let roomExists = false;
 
@@ -144,6 +147,37 @@ export function useRoomConnection(
       setMessages(toMessages(snap.val()));
     });
 
+    // Connection listener - restore presence after reconnection
+    // When Firebase connection drops, onDisconnect marks us as disconnected.
+    // When it reconnects, we need to re-mark ourselves as connected.
+    const unsubConnected = onValue(connectedRef, (snap) => {
+      if (isCleanedUp) return;
+      const isConnected = snap.val() === true;
+      
+      // Only act on reconnection (was disconnected, now connected)
+      // Skip the initial connection since joinRoom handles that
+      if (wasConnectedRef.current === false && isConnected) {
+        const playerRef = ref(db, `rooms/${roomCode}/players/${playerId}`);
+        update(playerRef, {
+          connected: true,
+          lastSeen: serverTimestamp(),
+        }).catch((err) => {
+          console.warn("[Room] Failed to restore presence after reconnection:", err.message);
+        });
+        
+        // Re-establish onDisconnect handler after reconnection
+        // Calculate connected count from current players data (using ref to avoid stale closure)
+        const currentConnected = playersDataRef.current
+          ? Object.values(playersDataRef.current).filter((p) => p.connected).length + 1 // +1 for ourselves reconnecting
+          : 1;
+        actions.updateDisconnectBehavior(roomCode, playerId, currentConnected).catch((err) => {
+          console.warn("[Room] Failed to update disconnect behavior after reconnection:", err.message);
+        });
+      }
+      
+      wasConnectedRef.current = isConnected;
+    });
+
     // Join room and set up onDisconnect
     actions.joinRoom(roomCode, playerId, playerName, playerAvatar)
       .then(({ disconnectRef }) => {
@@ -164,6 +198,10 @@ export function useRoomConnection(
       off(roomRef);
       off(playersRef);
       off(messagesRef);
+      off(connectedRef);
+      
+      // Reset connection tracking ref
+      wasConnectedRef.current = null;
       
       // Explicitly leave room on navigation
       // Log errors but don't block cleanup - user is already navigating away

@@ -31,11 +31,23 @@ async function getTeamCards(clueGiverPage: Page, team: 'red' | 'blue'): Promise<
 }
 
 /**
- * Helper: Wait for a player to appear in the lobby
- * Uses test ID for reliable detection across Firebase sync latency
+ * Helper: Wait for expected player count in the lobby
+ * More reliable than checking for specific names across Firebase sync
  */
-async function waitForPlayerVisible(page: Page, playerName: string, timeout = 20000) {
-  await expect(page.getByTestId(`lobby-player-${playerName}`)).toBeVisible({ timeout });
+async function waitForPlayerCount(page: Page, count: number, timeout = 30000) {
+  // Wait for "Teams (X/8)" header to show expected count
+  await expect(page.getByText(`Teams (${count}/8)`)).toBeVisible({ timeout });
+}
+
+/**
+ * Helper: Join a team role and verify it was registered
+ * Waits for the join button to reflect the change (becomes "Leave Team" visible or button state changes)
+ */
+async function joinTeamRole(page: Page, team: 'red' | 'blue', role: 'clueGiver' | 'guesser') {
+  const joinBtn = page.getByTestId(`lobby-join-${team}-${role}`);
+  await joinBtn.click();
+  // Wait for the assignment to be reflected - the leave team button should appear
+  await expect(page.getByText('Leave Team')).toBeVisible({ timeout: 10000 });
 }
 
 /**
@@ -88,33 +100,27 @@ test.describe('Full Game Flow', () => {
       await expect(pages[i].getByTestId('lobby-join-red-clueGiver')).toBeVisible({ timeout: 10000 });
     }
 
-    // Verify all players see each other (check on first page)
-    for (const name of playerNames) {
-      await waitForPlayerVisible(pages[0], name);
-    }
+    // Wait for all players to be synced (check on owner's page)
+    await waitForPlayerCount(pages[0], 4);
 
     // ========================================
-    // Step 3: Assign teams manually (sequential to avoid Firebase race)
+    // Step 3: Assign teams manually (sequential with verification)
     // ========================================
     // Player 0 (RedClue) - joins red clue giver
-    await pages[0].getByTestId('lobby-join-red-clueGiver').click();
-    await pages[0].waitForTimeout(500); // Let Firebase sync
+    await joinTeamRole(pages[0], 'red', 'clueGiver');
     
     // Player 1 (RedGuess) - joins red guesser
-    await pages[1].getByTestId('lobby-join-red-guesser').click();
-    await pages[1].waitForTimeout(500);
+    await joinTeamRole(pages[1], 'red', 'guesser');
     
     // Player 2 (BlueClue) - joins blue clue giver
-    await pages[2].getByTestId('lobby-join-blue-clueGiver').click();
-    await pages[2].waitForTimeout(500);
+    await joinTeamRole(pages[2], 'blue', 'clueGiver');
     
     // Player 3 (BlueGuess) - joins blue guesser
-    await pages[3].getByTestId('lobby-join-blue-guesser').click();
+    await joinTeamRole(pages[3], 'blue', 'guesser');
 
-    // Wait for start button to be enabled (indicates all roles assigned)
-    // Use longer timeout for production where Firebase sync takes longer
+    // Wait for start button to be enabled (all roles synced to owner)
     const startButton = pages[0].getByTestId('lobby-start-btn');
-    await expect(startButton).toBeEnabled({ timeout: 20000 });
+    await expect(startButton).toBeEnabled({ timeout: 30000 });
 
     // ========================================
     // Step 4: Owner starts the game
@@ -224,10 +230,8 @@ test.describe('Full Game Flow', () => {
       await expect(pages[i].getByTestId('lobby-join-red-clueGiver')).toBeVisible({ timeout: 10000 });
     }
 
-    // Wait for all players to be visible (instead of arbitrary timeout)
-    for (let i = 1; i <= 4; i++) {
-      await waitForPlayerVisible(pages[0], `Player${i}`);
-    }
+    // Wait for all players to be synced on owner's page
+    await waitForPlayerCount(pages[0], 4);
 
     // Owner clicks randomize
     const randomizeBtn = pages[0].getByTestId('lobby-randomize-btn');
@@ -280,19 +284,16 @@ test.describe('Full Game Flow', () => {
     }
 
     // ========================================
-    // Assign teams (sequential to avoid Firebase race)
+    // Assign teams (sequential with verification)
     // ========================================
-    await pages[0].getByTestId('lobby-join-red-clueGiver').click();
-    await pages[0].waitForTimeout(500);
-    await pages[1].getByTestId('lobby-join-red-guesser').click();
-    await pages[1].waitForTimeout(500);
-    await pages[2].getByTestId('lobby-join-blue-clueGiver').click();
-    await pages[2].waitForTimeout(500);
-    await pages[3].getByTestId('lobby-join-blue-guesser').click();
+    await joinTeamRole(pages[0], 'red', 'clueGiver');
+    await joinTeamRole(pages[1], 'red', 'guesser');
+    await joinTeamRole(pages[2], 'blue', 'clueGiver');
+    await joinTeamRole(pages[3], 'blue', 'guesser');
     
-    // Wait for start button to be enabled (longer timeout for production)
+    // Wait for start button to be enabled (all roles synced to owner)
     const startButton = pages[0].getByTestId('lobby-start-btn');
-    await expect(startButton).toBeEnabled({ timeout: 20000 });
+    await expect(startButton).toBeEnabled({ timeout: 30000 });
 
     // ========================================
     // Start game

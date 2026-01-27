@@ -83,8 +83,19 @@ class TickSynthesizer {
   }
 }
 
-// Inner component that uses the hooks
-function SoundProviderInner({ 
+// Ref to store play functions (shared between components)
+const playFunctionsRef: { current: {
+  playGameStart: () => void;
+  playTurnChange: () => void;
+  playGameOver: () => void;
+} | null } = { current: null };
+
+/**
+ * Stable inner component that captures use-sound hooks.
+ * Defined outside SoundProvider to maintain component identity when props change.
+ * This prevents remounting children when volume/soundEnabled changes.
+ */
+function PlayFunctionCapture({ 
   children, 
   volume, 
   soundEnabled 
@@ -109,27 +120,13 @@ function SoundProviderInner({
     soundEnabled,
   });
 
-  // Store play functions in ref so parent can access them
-  const playFunctionsRef = useRef({ playGameStart, playTurnChange, playGameOver });
-  
+  // Update shared ref when play functions change
   useEffect(() => {
     playFunctionsRef.current = { playGameStart, playTurnChange, playGameOver };
   }, [playGameStart, playTurnChange, playGameOver]);
 
-  // Expose play functions via context
-  return (
-    <PlayFunctionsContext.Provider value={playFunctionsRef}>
-      {children}
-    </PlayFunctionsContext.Provider>
-  );
+  return <>{children}</>;
 }
-
-// Context for play functions (internal use)
-const PlayFunctionsContext = createContext<React.RefObject<{
-  playGameStart: () => void;
-  playTurnChange: () => void;
-  playGameOver: () => void;
-}> | null>(null);
 
 export function SoundProvider({ children }: { children: ReactNode }) {
   const [volume, setVolumeState] = useState(0.5);
@@ -137,11 +134,6 @@ export function SoundProvider({ children }: { children: ReactNode }) {
   const [isHydrated, setIsHydrated] = useState(false);
   const prefersReducedMotion = usePrefersReducedMotion();
   const tickSynthesizerRef = useRef<TickSynthesizer | null>(null);
-  const playFunctionsRef = useRef<{
-    playGameStart: () => void;
-    playTurnChange: () => void;
-    playGameOver: () => void;
-  } | null>(null);
 
   // Initialize tick synthesizer
   useEffect(() => {
@@ -209,36 +201,6 @@ export function SoundProvider({ children }: { children: ReactNode }) {
     }
   }, [soundEnabled, volume]);
 
-  // Component to capture play functions from use-sound hooks
-  const PlayFunctionCapture = useCallback(({ children }: { children: ReactNode }) => {
-    const contextRef = useContext(PlayFunctionsContext);
-    
-    // use-sound hooks must be called at component top level
-    const [playGameStart] = useSound("/sounds/game-start.mp3", { 
-      volume: volume * 0.7,
-      soundEnabled,
-    });
-    
-    const [playTurnChange] = useSound("/sounds/turn-change.mp3", { 
-      volume: volume * 0.5,
-      soundEnabled,
-    });
-    
-    const [playGameOver] = useSound("/sounds/game-over.mp3", { 
-      volume: volume * 0.6,
-      soundEnabled,
-    });
-
-    useEffect(() => {
-      if (contextRef) {
-        contextRef.current = { playGameStart, playTurnChange, playGameOver };
-      }
-      playFunctionsRef.current = { playGameStart, playTurnChange, playGameOver };
-    }, [playGameStart, playTurnChange, playGameOver, contextRef]);
-
-    return <>{children}</>;
-  }, [volume, soundEnabled]);
-
   return (
     <SoundContext.Provider value={{
       volume,
@@ -249,7 +211,7 @@ export function SoundProvider({ children }: { children: ReactNode }) {
       soundEnabled,
       playSound,
     }}>
-      <PlayFunctionCapture>
+      <PlayFunctionCapture volume={volume} soundEnabled={soundEnabled}>
         {children}
       </PlayFunctionCapture>
     </SoundContext.Provider>
