@@ -149,7 +149,7 @@ export function useRtdbRoom(roomCode: string, playerName: string, playerAvatar: 
 
   // Main effect: join room and set up listeners
   useEffect(() => {
-    if (!playerName || !roomCode) return;
+    if (!playerName || !roomCode || !playerAvatar) return;
 
     const db = getDatabase();
     if (!db) {

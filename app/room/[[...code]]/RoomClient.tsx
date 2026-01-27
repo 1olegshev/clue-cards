@@ -30,7 +30,7 @@ export default function RoomPage() {
   const playerName = searchParams.get("name") || "";
 
   // Get avatar from localStorage (or random default)
-  const [playerAvatar, setPlayerAvatar] = useState("");
+  const [playerAvatar, setPlayerAvatar] = useState<string | null>(null);
   useEffect(() => {
     const stored = localStorage.getItem(LOCAL_STORAGE_AVATAR_KEY);
     if (stored) {
@@ -42,8 +42,8 @@ export default function RoomPage() {
     }
   }, []);
 
-  // Custom hooks
-  const room = useRtdbRoom(roomCode, playerName, playerAvatar);
+  // Custom hooks - only join room once avatar is loaded to prevent re-join race condition
+  const room = useRtdbRoom(roomCode, playerName, playerAvatar || "");
   const timer = useGameTimer(room.gameState, room.handleEndTurn);
   const overlays = useTransitionOverlays(room.gameState);
 
