@@ -12,12 +12,12 @@ async function globalTeardown() {
   console.log('\n🧹 Cleaning up test rooms...');
   
   try {
-    // Run cleanup script with timeout (30 seconds max)
+    // Run cleanup script with timeout (60 seconds max)
     const result = execSync('npm run cleanup:rooms -- --disconnected', {
       cwd: process.cwd(),
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
-      timeout: 30000, // 30 second timeout
+      timeout: 60000, // 60 second timeout
     });
     
     // Extract summary from output
@@ -38,8 +38,11 @@ async function globalTeardown() {
     // Don't fail tests if cleanup fails - just log it
     if (error && typeof error === 'object' && 'killed' in error && error.killed) {
       console.warn('⚠️  Cleanup timed out (skipped)');
+    } else if (error && typeof error === 'object' && 'stderr' in error) {
+      const stderr = (error as { stderr?: string }).stderr;
+      console.warn('⚠️  Cleanup failed:', stderr || 'Unknown error');
     } else {
-      console.warn('⚠️  Cleanup skipped (missing Firebase Admin credentials?)');
+      console.warn('⚠️  Cleanup skipped:', error instanceof Error ? error.message : 'Unknown error');
     }
   }
 }

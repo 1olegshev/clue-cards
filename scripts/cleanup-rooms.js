@@ -136,6 +136,9 @@ async function main() {
   console.log(`Deleted: ${deleted}`);
   console.log(`Kept: ${kept}`);
   if (dryRun) console.log("(dry run - no actual deletes)");
+  
+  // Exit cleanly (Firebase keeps connection open otherwise)
+  process.exit(0);
 }
 
 main().catch((err) => {
