@@ -168,13 +168,13 @@ export default function GameBoard({
     if (card.revealed) {
       switch (card.team) {
         case "red":
-          return "bg-red-team text-white";
+          return "card-texture-red text-white";
         case "blue":
-          return "bg-blue-team text-white";
+          return "card-texture-blue text-white";
         case "trap":
-          return "bg-gray-900 text-white";
+          return "card-texture-trap text-white";
         default:
-          return "bg-yellow-200 dark:bg-yellow-700 text-yellow-900 dark:text-yellow-100";
+          return "card-texture-neutral text-yellow-900 dark:text-yellow-100";
       }
     }
 
@@ -195,13 +195,13 @@ export default function GameBoard({
   const getCardBackIconColor = useCallback((card: Card) => {
     switch (card.team) {
       case "red":
-        return "text-red-800";
+        return "text-red-900/60";
       case "blue":
-        return "text-blue-800";
+        return "text-blue-900/60";
       case "trap":
-        return "text-gray-500";
+        return "text-gray-400/50";
       default:
-        return "text-yellow-600 dark:text-yellow-800";
+        return "text-yellow-700/60 dark:text-yellow-900/60";
     }
   }, []);
 
