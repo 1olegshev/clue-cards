@@ -175,11 +175,11 @@ export async function joinRoom(
 /**
  * Update onDisconnect behavior based on whether this player is the last one.
  * Call this whenever the player list changes.
- * - If last connected player: onDisconnect deletes the entire room
- * - If others are connected: onDisconnect just marks this player disconnected
+ * - If last connected player AND owner: onDisconnect deletes the entire room
+ * - Otherwise: onDisconnect just marks this player disconnected
  * 
- * NOTE: We set up the new handler BEFORE cancelling old ones to avoid a race
- * condition where the browser could close between cancel and setup.
+ * NOTE: Only the owner can set up room-level onDisconnect (permission requirement).
+ * Non-owners always just mark themselves as disconnected.
  */
 export async function updateDisconnectBehavior(
   roomCode: string,
@@ -190,19 +190,26 @@ export async function updateDisconnectBehavior(
   const roomRef = ref(db, `rooms/${roomCode}`);
   const playerRef = ref(db, `rooms/${roomCode}/players/${playerId}`);
 
-  if (connectedCount <= 1) {
-    // I'm the last (or only) connected player - delete room on disconnect
+  // Check if this player is the owner
+  const roomSnap = await get(roomRef);
+  const isOwner = roomSnap.exists() && roomSnap.val().ownerId === playerId;
+
+  if (connectedCount <= 1 && isOwner) {
+    // I'm the last connected player AND the owner - delete room on disconnect
     // First set up room deletion, then cancel player-level handler
     await onDisconnect(roomRef).remove();
     await onDisconnect(playerRef).cancel();
   } else {
-    // Others are connected - just mark myself as disconnected
-    // First set up player disconnect, then cancel room-level handler
+    // Others are connected OR I'm not the owner - just mark myself as disconnected
+    // First set up player disconnect, then cancel room-level handler (if we had one)
     await onDisconnect(playerRef).update({
       connected: false,
       lastSeen: serverTimestamp(),
     });
-    await onDisconnect(roomRef).cancel();
+    // Only try to cancel room-level handler if we're the owner (non-owners never set it up)
+    if (isOwner) {
+      await onDisconnect(roomRef).cancel();
+    }
   }
 }
 

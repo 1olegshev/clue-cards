@@ -111,6 +111,7 @@
 
         "messages": {
           ".write": "auth != null && root.child('rooms').child($roomCode).child('ownerId').val() === auth.uid",
+          ".indexOn": ["timestamp"],
           "$messageId": {
             ".write": "auth != null",
             ".validate": "newData.hasChildren(['playerName', 'message', 'timestamp', 'type']) && newData.child('message').isString() && newData.child('message').val().length > 0 && newData.child('message').val().length <= 200",
