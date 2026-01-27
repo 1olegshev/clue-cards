@@ -58,28 +58,38 @@ export default function RoomPage() {
   // Background music - changes based on game state
   // Only plays when player has actually joined the room (has playerName)
   const soundContext = useSoundContextOptional();
+  const setMusicTrack = soundContext?.setMusicTrack;
+  
+  // Track whether gameState exists (for dependency tracking)
+  const hasGameState = !!room.gameState;
+  const gameStarted = room.gameState?.gameStarted ?? false;
+  const gameOver = room.gameState?.gameOver ?? false;
+  const turnDuration = room.gameState?.turnDuration ?? 60;
+  
   useEffect(() => {
-    if (!soundContext) return;
+    if (!setMusicTrack) return;
     
     // Don't play music until player has joined (entered their name)
     if (!playerName) {
-      soundContext.setMusicTrack(null);
+      setMusicTrack(null);
       return;
     }
     
-    const gameState = room.gameState;
+    // No game state yet
+    if (!hasGameState) {
+      setMusicTrack(null);
+      return;
+    }
+    
     let track: MusicTrack = null;
     
-    if (!gameState) {
-      track = null;
-    } else if (gameState.gameOver) {
+    if (gameOver) {
       track = "victory";
-    } else if (gameState.gameStarted) {
+    } else if (gameStarted) {
       // Select track based on turn duration
-      const duration = gameState.turnDuration || 60;
-      if (duration <= 30) {
+      if (turnDuration <= 30) {
         track = "game-30s";
-      } else if (duration <= 60) {
+      } else if (turnDuration <= 60) {
         track = "game-60s";
       } else {
         track = "game-90s";
@@ -89,8 +99,8 @@ export default function RoomPage() {
       track = "lobby";
     }
     
-    soundContext.setMusicTrack(track);
-  }, [playerName, room.gameState?.gameStarted, room.gameState?.gameOver, room.gameState?.turnDuration, soundContext]);
+    setMusicTrack(track);
+  }, [playerName, hasGameState, gameStarted, gameOver, turnDuration, setMusicTrack]);
 
   // Early returns for special states
   if (room.roomClosedReason) {
