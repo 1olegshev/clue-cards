@@ -17,6 +17,7 @@ import {
   GameView,
   LobbyView,
 } from "@/components/room";
+import OfflineBanner from "@/components/OfflineBanner";
 
 export default function RoomPage() {
   const pathname = usePathname();
@@ -105,6 +106,7 @@ export default function RoomPage() {
       
       <div className="max-w-6xl mx-auto">
         <RoomHeader roomCode={roomCode} currentPlayer={room.currentPlayer} />
+        <OfflineBanner />
 
         {room.gameState.gameStarted ? (
           <GameView 

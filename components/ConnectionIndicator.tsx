@@ -1,46 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { ref, onValue } from "firebase/database";
-import { getDatabase } from "@/lib/firebase";
-
-type ConnectionState = "connected" | "disconnected" | "unknown";
+import { useFirebaseConnection } from "@/hooks/useFirebaseConnection";
 
 /**
- * Indicator showing Firebase connection status.
- * Uses Firebase's .info/connected path for real-time connection monitoring.
+ * Indicator showing Firebase connection status in navbar.
+ * Shows a small badge when disconnected.
  */
 export default function ConnectionIndicator() {
-  const [connectionState, setConnectionState] = useState<ConnectionState>("unknown");
+  const connectionState = useFirebaseConnection();
 
-  useEffect(() => {
-    const db = getDatabase();
-    if (!db) {
-      setConnectionState("disconnected");
-      return;
-    }
-
-    // Firebase special path that indicates connection status
-    const connectedRef = ref(db, ".info/connected");
-    
-    const unsubscribe = onValue(connectedRef, (snap) => {
-      if (snap.val() === true) {
-        setConnectionState("connected");
-      } else {
-        setConnectionState("disconnected");
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  // Don't show anything while still determining connection status
-  if (connectionState === "unknown") {
-    return null;
-  }
-
-  // Only show indicator when disconnected
-  if (connectionState === "connected") {
+  // Don't show anything while still determining connection status or when connected
+  if (connectionState !== "disconnected") {
     return null;
   }
 
