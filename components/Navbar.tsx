@@ -90,10 +90,14 @@ export default function Navbar() {
       // In room but no active game - leave explicitly before navigating
       e.preventDefault();
       setIsLeaving(true);
+      console.log("[Navbar] Calling leaveRoom from lobby...");
       try {
         await leaveRoom();
+        console.log("[Navbar] leaveRoom completed successfully");
       } catch (err) {
-        console.error("Error leaving room:", err);
+        console.error("[Navbar] Error leaving room:", err);
+        // Show error visibly since console clears on navigation
+        alert(`Error leaving room: ${err}`);
       }
       router.push("/");
     }
