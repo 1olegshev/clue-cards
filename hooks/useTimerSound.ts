@@ -37,8 +37,11 @@ export function useTimerSound({
 }: UseTimerSoundOptions) {
   const soundContext = useSoundContextOptional();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const prevTimeRef = useRef<number | null>(null);
   const currentModeRef = useRef<TickMode>("none");
+  
+  // Use ref to access soundContext in interval without it being a dependency
+  const soundContextRef = useRef(soundContext);
+  soundContextRef.current = soundContext;
 
   // Determine the tick mode based on time remaining
   const getTickMode = (time: number | null): TickMode => {
@@ -58,42 +61,29 @@ export function useTimerSound({
   
   const targetMode = shouldTick ? getTickMode(timeRemaining) : "none";
 
-  // Effect to handle turn resets (when time jumps up)
-  useEffect(() => {
-    if (timeRemaining !== null && prevTimeRef.current !== null) {
-      if (timeRemaining > prevTimeRef.current + 5) {
-        // Timer reset (new turn) - stop sounds and reset mode
-        soundContext?.stopTickSounds();
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
-        currentModeRef.current = "none";
-      }
-    }
-    prevTimeRef.current = timeRemaining;
-  }, [timeRemaining, soundContext]);
-
-  // Effect to handle mode changes - only runs when mode actually changes
+  // Single effect to handle all tick logic
   useEffect(() => {
     const prevMode = currentModeRef.current;
     
-    // No change in mode - don't recreate interval
+    // Helper to clear interval
+    const clearTickInterval = () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+
+    // No change in mode - keep current interval running
     if (targetMode === prevMode) {
       return;
     }
 
-    // Clear existing interval when mode changes
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
+    // Mode changed - clear old interval
+    clearTickInterval();
 
-    // If transitioning to "none", stop sounds
+    // If going to "none", stop sounds and exit
     if (targetMode === "none") {
-      if (prevMode !== "none") {
-        soundContext?.stopTickSounds();
-      }
+      soundContextRef.current?.stopTickSounds();
       currentModeRef.current = "none";
       return;
     }
@@ -102,36 +92,37 @@ export function useTimerSound({
     const interval = isUrgent ? urgentInterval : normalInterval;
     const soundName = isUrgent ? "tickUrgent" : "tick";
 
-    // Play immediately when entering a tick mode
-    if (soundContext?.soundEnabled) {
-      soundContext.playSound(soundName);
+    // Stop previous tick sounds when switching modes
+    if (prevMode !== "none") {
+      soundContextRef.current?.stopTickSounds();
     }
 
     currentModeRef.current = targetMode;
 
+    // Play first tick immediately
+    if (soundContextRef.current?.soundEnabled) {
+      soundContextRef.current.playSound(soundName);
+    }
+
     // Set up interval for subsequent ticks
     intervalRef.current = setInterval(() => {
-      if (soundContext?.soundEnabled) {
-        soundContext.playSound(soundName);
+      if (soundContextRef.current?.soundEnabled) {
+        soundContextRef.current.playSound(soundName);
       }
     }, interval);
 
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [targetMode, normalInterval, urgentInterval, soundContext]);
+    // Cleanup on unmount or before next effect run
+    return clearTickInterval;
+  }, [targetMode, normalInterval, urgentInterval]);
 
-  // Stop tick sounds on unmount
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      soundContext?.stopTickSounds();
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
+      soundContextRef.current?.stopTickSounds();
     };
-  }, [soundContext]);
+  }, []);
 }
