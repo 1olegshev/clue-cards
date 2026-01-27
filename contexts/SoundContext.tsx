@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from "react";
 import useSound from "use-sound";
-import { Howl } from "howler";
+import { Howl, Howler } from "howler";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { 
   LOCAL_STORAGE_SOUND_MUTED_KEY, 
@@ -15,6 +15,27 @@ export type MusicTrack = "lobby" | "game-30s" | "game-60s" | "game-90s" | "victo
 
 // Music plays at 30% of master volume
 const MUSIC_VOLUME_RATIO = 0.3;
+
+// Track if audio context has been unlocked
+let audioContextUnlocked = false;
+
+/**
+ * Unlock the Web Audio context on first user interaction.
+ * Browsers block audio playback until user interacts with the page.
+ */
+function unlockAudioContext() {
+  if (audioContextUnlocked) return;
+  
+  // Howler exposes the audio context - resume it
+  const ctx = Howler.ctx;
+  if (ctx && ctx.state === "suspended") {
+    ctx.resume().then(() => {
+      audioContextUnlocked = true;
+    });
+  } else {
+    audioContextUnlocked = true;
+  }
+}
 
 interface SoundContextValue {
   // Sound effects
@@ -125,6 +146,29 @@ export function SoundProvider({ children }: { children: ReactNode }) {
 
   // Computed music volume (30% of master volume)
   const musicVolume = volume * MUSIC_VOLUME_RATIO;
+
+  // Unlock audio context on first user interaction (browser autoplay policy)
+  useEffect(() => {
+    const events = ["click", "touchstart", "keydown"];
+    
+    const handleInteraction = () => {
+      unlockAudioContext();
+      // Remove listeners after first interaction
+      events.forEach(event => {
+        document.removeEventListener(event, handleInteraction);
+      });
+    };
+    
+    events.forEach(event => {
+      document.addEventListener(event, handleInteraction, { once: true });
+    });
+    
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, handleInteraction);
+      });
+    };
+  }, []);
 
   // Load from localStorage on mount
   useEffect(() => {
