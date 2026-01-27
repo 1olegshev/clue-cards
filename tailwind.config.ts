@@ -10,14 +10,14 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
-        "red-team": "var(--red-team)",
-        "red-team-muted": "var(--red-team-muted)",
-        "red-team-light": "var(--red-team-light)",
-        "blue-team": "var(--blue-team)",
-        "blue-team-muted": "var(--blue-team-muted)",
-        "blue-team-light": "var(--blue-team-light)",
+        background: "var(--color-background)",
+        foreground: "var(--color-foreground)",
+        "red-team": "var(--color-red-team)",
+        "red-team-muted": "var(--color-red-team-muted)",
+        "red-team-light": "var(--color-red-team-light)",
+        "blue-team": "var(--color-blue-team)",
+        "blue-team-muted": "var(--color-blue-team-muted)",
+        "blue-team-light": "var(--color-blue-team-light)",
       },
     },
   },
