@@ -90,36 +90,40 @@ export default function CompactTeams({ players, currentPlayerId, isRoomOwner, on
             <span>Spectators ({spectators.length})</span>
           </div>
           <div className="flex flex-wrap gap-2">
-            {spectators.map((p) => (
-              <div
-                key={p.id}
-                className={`text-xs px-2 py-1 rounded-lg flex items-center gap-2 ${
-                  p.id === currentPlayerId
-                    ? "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300"
-                    : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                }`}
-              >
-                <span>{p.name}{p.id === currentPlayerId ? " (you)" : ""}</span>
-                {isRoomOwner && onAddSpectator && (
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => onAddSpectator("red", p.id)}
-                      className="px-1.5 py-0.5 rounded bg-red-200 dark:bg-red-800 text-red-700 dark:text-red-200 hover:bg-red-300 dark:hover:bg-red-700"
-                      title="Add to Red team"
-                    >
-                      +R
-                    </button>
-                    <button
-                      onClick={() => onAddSpectator("blue", p.id)}
-                      className="px-1.5 py-0.5 rounded bg-blue-200 dark:bg-blue-800 text-blue-700 dark:text-blue-200 hover:bg-blue-300 dark:hover:bg-blue-700"
-                      title="Add to Blue team"
-                    >
-                      +B
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
+            {spectators.map((p) => {
+              const isMe = p.id === currentPlayerId;
+              const canAddThis = (isRoomOwner || isMe) && onAddSpectator;
+              return (
+                <div
+                  key={p.id}
+                  className={`text-xs px-2 py-1 rounded-lg flex items-center gap-2 ${
+                    isMe
+                      ? "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300"
+                      : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+                  }`}
+                >
+                  <span>{p.name}{isMe ? " (you)" : ""}</span>
+                  {canAddThis && (
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => onAddSpectator("red", p.id)}
+                        className="px-1.5 py-0.5 rounded bg-red-200 dark:bg-red-800 text-red-700 dark:text-red-200 hover:bg-red-300 dark:hover:bg-red-700"
+                        title={isMe ? "Join Red team" : "Add to Red team"}
+                      >
+                        +R
+                      </button>
+                      <button
+                        onClick={() => onAddSpectator("blue", p.id)}
+                        className="px-1.5 py-0.5 rounded bg-blue-200 dark:bg-blue-800 text-blue-700 dark:text-blue-200 hover:bg-blue-300 dark:hover:bg-blue-700"
+                        title={isMe ? "Join Blue team" : "Add to Blue team"}
+                      >
+                        +B
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

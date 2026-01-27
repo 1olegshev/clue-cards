@@ -517,9 +517,10 @@ export async function setLobbyRole(
   const isOwner = requesterId && roomData.ownerId === requesterId;
   const isSpectator = !playerData?.team || !playerData?.role;
   
-  // During active game: only allow owner to add spectators as guessers
+  // During active game: only allow owner or self to add spectators as guessers
+  const isSelf = requesterId === playerId;
   if (roomData.gameStarted && !roomData.gameOver && !roomData.paused) {
-    if (!isOwner) throw new Error("Only owner can add players during game");
+    if (!isOwner && !isSelf) throw new Error("Only owner or self can add players during game");
     if (!isSpectator) throw new Error("Can only add spectators during game");
     if (role === "clueGiver") throw new Error("Can only add as guesser during game");
   }
