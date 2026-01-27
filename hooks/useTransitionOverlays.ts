@@ -29,14 +29,25 @@ export function useTransitionOverlays(
   const [clueAnimating, setClueAnimating] = useState(false);
   
   // Refs for tracking state changes
-  const prevGameStartedRef = useRef<boolean>(false);
+  const prevGameStartedRef = useRef<boolean | null>(null);
   const prevCurrentTeamRef = useRef<string | null>(null);
-  const prevGameOverRef = useRef<boolean>(false);
+  const prevGameOverRef = useRef<boolean | null>(null);
   const prevClueRef = useRef<string | null>(null);
   const clueAnimationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!gameState) return;
+    
+    // On first load, initialize refs without triggering transitions
+    // This prevents splash screens on page refresh when game is already in progress
+    const isFirstLoad = prevGameStartedRef.current === null;
+    if (isFirstLoad) {
+      prevGameStartedRef.current = gameState.gameStarted;
+      prevCurrentTeamRef.current = gameState.currentTeam;
+      prevGameOverRef.current = gameState.gameOver;
+      prevClueRef.current = gameState.currentClue?.word ?? null;
+      return;
+    }
     
     // Game Start transition
     if (gameState.gameStarted && !prevGameStartedRef.current) {
