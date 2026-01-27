@@ -109,6 +109,7 @@ export function useRoomConnection(
     });
 
     // Players listener - also updates onDisconnect behavior based on player count
+    console.log("[Room] Setting up players listener for", roomCode);
     let lastConnectedCount = -1;
     let latestConnectedCount = 0; // Persists across callbacks for timeout to use
     let disconnectBehaviorTimeout: NodeJS.Timeout | null = null;
