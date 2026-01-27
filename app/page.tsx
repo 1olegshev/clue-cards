@@ -1,13 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import AvatarPicker from "@/components/AvatarPicker";
+import { LOCAL_STORAGE_AVATAR_KEY, getRandomAvatar } from "@/shared/constants";
 
 export default function Home() {
   const [playerName, setPlayerName] = useState("");
   const [roomCode, setRoomCode] = useState("");
+  const [avatar, setAvatar] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const router = useRouter();
+
+  // Initialize avatar from localStorage or random on mount
+  useEffect(() => {
+    const stored = localStorage.getItem(LOCAL_STORAGE_AVATAR_KEY);
+    setAvatar(stored || getRandomAvatar());
+  }, []);
+
+  const handleAvatarSelect = (newAvatar: string) => {
+    setAvatar(newAvatar);
+    localStorage.setItem(LOCAL_STORAGE_AVATAR_KEY, newAvatar);
+  };
 
   const handleCreateRoom = () => {
     if (!playerName.trim()) return;
@@ -23,9 +37,9 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
+    <main className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
       <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
-        <h1 className="text-5xl font-bold text-center mb-2 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+        <h1 className="text-5xl font-bold text-center mb-2 bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
           Clue Cards
         </h1>
         <p className="text-center text-gray-600 dark:text-gray-400 mb-8">
@@ -37,20 +51,23 @@ export default function Home() {
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Your Name
             </label>
-            <input
-              id="name"
-              data-testid="home-name-input"
-              type="text"
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-              placeholder="Enter your name"
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !isCreating) {
-                  handleCreateRoom();
-                }
-              }}
-            />
+            <div className="flex items-center gap-3">
+              <AvatarPicker selected={avatar} onSelect={handleAvatarSelect} />
+              <input
+                id="name"
+                data-testid="home-name-input"
+                type="text"
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+                placeholder="Enter your name"
+                className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !isCreating) {
+                    handleCreateRoom();
+                  }
+                }}
+              />
+            </div>
           </div>
 
           <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -58,7 +75,7 @@ export default function Home() {
               onClick={handleCreateRoom}
               disabled={!playerName.trim() || isCreating}
               data-testid="home-create-btn"
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg"
+              className="w-full bg-linear-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg"
             >
               Create New Room
             </button>

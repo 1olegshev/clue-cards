@@ -149,7 +149,7 @@ export function useFirestoreRoom(roomCode: string, playerName: string): UseFires
     // Players listener
     const unsub2 = onSnapshot(collection(db, "rooms", roomCode, "players"), (snap) => {
       const list: Player[] = snap.docs.map((d) => ({
-        id: d.id, name: d.data().name, team: d.data().team || null, role: d.data().role || null,
+        id: d.id, name: d.data().name, avatar: d.data().avatar || "🐱", team: d.data().team || null, role: d.data().role || null,
       }));
       playersRef.current = list;
       setPlayers(list);

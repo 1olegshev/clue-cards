@@ -43,6 +43,7 @@ interface RoomData {
 
 interface PlayerData {
   name: string;
+  avatar: string;
   team: Team | null;
   role: "clueGiver" | "guesser" | null;
   connected: boolean;
@@ -104,7 +105,8 @@ function arrayToVotes(arr: string[]): Record<string, boolean> {
 export async function joinRoom(
   roomCode: string,
   playerId: string,
-  playerName: string
+  playerName: string,
+  playerAvatar: string
 ): Promise<{ disconnectRef: DatabaseReference }> {
   const db = getDb();
   const roomRef = ref(db, `rooms/${roomCode}`);
@@ -152,9 +154,10 @@ export async function joinRoom(
   const existingPlayerSnap = await get(playerRef);
   
   if (existingPlayerSnap.exists()) {
-    // Rejoin - preserve team/role, update name and connection status
+    // Rejoin - preserve team/role, update name/avatar and connection status
     await update(playerRef, {
       name: playerName,
+      avatar: playerAvatar,
       connected: true,
       lastSeen: serverTimestamp(),
     });
@@ -162,6 +165,7 @@ export async function joinRoom(
     // New player
     await set(playerRef, {
       name: playerName,
+      avatar: playerAvatar,
       team: null,
       role: null,
       connected: true,
@@ -323,7 +327,7 @@ export async function startGame(roomCode: string, playerId: string): Promise<voi
 
   const playersData = (playersSnap.val() || {}) as Record<string, PlayerData>;
   const players = Object.entries(playersData)
-    .map(([id, p]) => ({ id, name: p.name, team: p.team, role: p.role }))
+    .map(([id, p]) => ({ id, name: p.name, avatar: p.avatar || "🐱", team: p.team, role: p.role }))
     .filter((p) => p.team && p.role) as Player[];
 
   if (!teamsAreReady(players)) throw new Error("Teams not ready");
@@ -369,7 +373,7 @@ export async function rematch(roomCode: string, playerId: string): Promise<void>
 
   const playersData = (playersSnap.val() || {}) as Record<string, PlayerData>;
   const players = Object.entries(playersData)
-    .map(([id, p]) => ({ id, name: p.name, team: p.team, role: p.role }))
+    .map(([id, p]) => ({ id, name: p.name, avatar: p.avatar || "🐱", team: p.team, role: p.role }))
     .filter((p) => p.team && p.role) as Player[];
 
   if (!teamsAreReady(players)) throw new Error("Teams not ready");
@@ -576,6 +580,7 @@ export async function randomizeTeams(roomCode: string, playerId: string): Promis
   const players = Object.entries(playersData).map(([id, p]) => ({
     id,
     name: p.name,
+    avatar: p.avatar || "🐱",
     team: p.team,
     role: p.role,
   }));

@@ -365,7 +365,7 @@ export async function randomizeTeams(roomCode: string, playerId: string): Promis
   const roomRef = doc(db, "rooms", roomCode);
   const playersSnap = await getDocs(collection(db, "rooms", roomCode, "players"));
   const players = playersSnap.docs.map((d) => ({
-    id: d.id, name: d.data().name, team: d.data().team, role: d.data().role,
+    id: d.id, name: d.data().name, avatar: d.data().avatar || "🐱", team: d.data().team, role: d.data().role,
   }));
 
   if (players.length < 4 || players.length % 2 !== 0) throw new Error("Need even number of players (4+)");

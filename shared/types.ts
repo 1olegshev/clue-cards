@@ -16,6 +16,7 @@ export interface Card {
 export interface Player {
   id: string;
   name: string;
+  avatar: string;
   team: Team | null;
   role: Role | null;
 }

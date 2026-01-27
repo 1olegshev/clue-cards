@@ -215,10 +215,11 @@ export default function TeamLobby({
                     : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
                 }`}>
                   {clueGiver ? (
-                    <div className={`font-medium truncate ${
+                    <div className={`font-medium truncate flex items-center gap-2 ${
                       clueGiver.id === currentPlayer?.id ? "text-yellow-700 dark:text-yellow-300" : ""
                     }`}>
-                      {clueGiver.name}{clueGiver.id === currentPlayer?.id ? " (you)" : ""}
+                      <span className="text-lg">{clueGiver.avatar}</span>
+                      <span>{clueGiver.name}{clueGiver.id === currentPlayer?.id ? " (you)" : ""}</span>
                     </div>
                   ) : (
                     <span className="text-gray-500 dark:text-gray-400">Open</span>
@@ -254,12 +255,13 @@ export default function TeamLobby({
                     <div className="text-sm text-gray-500 dark:text-gray-400">No guessers yet</div>
                   ) : (
                     guessers.map((player) => (
-                      <div key={player.id} className={`rounded-lg px-3 py-2 text-sm border truncate ${
+                      <div key={player.id} className={`rounded-lg px-3 py-2 text-sm border flex items-center gap-2 ${
                         player.id === currentPlayer?.id
                           ? "bg-yellow-50 dark:bg-yellow-900/30 border-yellow-400 dark:border-yellow-600 text-yellow-700 dark:text-yellow-300 font-medium"
                           : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
                       }`}>
-                        {player.name}{player.id === currentPlayer?.id ? " (you)" : ""}
+                        <span className="text-lg">{player.avatar}</span>
+                        <span className="truncate">{player.name}{player.id === currentPlayer?.id ? " (you)" : ""}</span>
                       </div>
                     ))
                   )}
@@ -290,20 +292,21 @@ export default function TeamLobby({
                     ? "bg-yellow-50 dark:bg-yellow-900/30 border-yellow-400 dark:border-yellow-600"
                     : "bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                 }`}>
-                  <div className={`font-medium truncate ${
+                  <div className={`font-medium flex items-center gap-2 ${
                     player.id === currentPlayer?.id ? "text-yellow-700 dark:text-yellow-300" : ""
                   }`}>
-                    {player.name}{player.id === currentPlayer?.id ? " (you)" : ""}
+                    <span className="text-lg">{player.avatar}</span>
+                    <span className="truncate">{player.name}{player.id === currentPlayer?.id ? " (you)" : ""}</span>
                   </div>
                   {player.team && player.role && (
-                    <div className={`text-xs mt-1 ${
+                    <div className={`text-xs mt-1 ml-7 ${
                       player.team === "red" ? "text-red-600 dark:text-red-400" : "text-blue-600 dark:text-blue-400"
                     }`}>
                       {player.team} {player.role === "clueGiver" ? "clue giver" : "guesser"}
                     </div>
                   )}
                   {!player.team || !player.role ? (
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-7">
                       {isPaused ? "Spectator" : "No team selected"}
                     </div>
                   ) : null}

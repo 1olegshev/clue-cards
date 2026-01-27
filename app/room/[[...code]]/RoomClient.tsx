@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import type { GameState } from "@/shared/types";
 import GameBoard from "@/components/GameBoard";
 import ChatLog from "@/components/ChatLog";
@@ -10,6 +10,7 @@ import TransitionOverlay from "@/components/TransitionOverlay";
 import { useRtdbRoom } from "@/hooks/useRtdbRoom";
 import { useGameTimer } from "@/hooks/useGameTimer";
 import { useTransitionOverlays } from "@/hooks/useTransitionOverlays";
+import { LOCAL_STORAGE_AVATAR_KEY, getRandomAvatar } from "@/shared/constants";
 import {
   RoomHeader,
   GameStatusPanel,
@@ -28,10 +29,21 @@ export default function RoomPage() {
   const roomCode = pathname?.split("/room/")[1]?.split("/")[0] || "";
   const playerName = searchParams.get("name") || "";
 
-  // Debug logging
+  // Get avatar from localStorage (or random default)
+  const [playerAvatar, setPlayerAvatar] = useState("");
+  useEffect(() => {
+    const stored = localStorage.getItem(LOCAL_STORAGE_AVATAR_KEY);
+    if (stored) {
+      setPlayerAvatar(stored);
+    } else {
+      const random = getRandomAvatar();
+      setPlayerAvatar(random);
+      localStorage.setItem(LOCAL_STORAGE_AVATAR_KEY, random);
+    }
+  }, []);
 
   // Custom hooks
-  const room = useRtdbRoom(roomCode, playerName);
+  const room = useRtdbRoom(roomCode, playerName, playerAvatar);
   const timer = useGameTimer(room.gameState, room.handleEndTurn);
   const overlays = useTransitionOverlays(room.gameState);
 
@@ -95,7 +107,10 @@ export default function RoomPage() {
     return (
       <JoinRoomForm
         roomCode={roomCode}
-        onJoin={(name) => router.replace(`/room/${roomCode}?name=${encodeURIComponent(name)}`)}
+        onJoin={(name, avatar) => {
+          localStorage.setItem(LOCAL_STORAGE_AVATAR_KEY, avatar);
+          router.replace(`/room/${roomCode}?name=${encodeURIComponent(name)}`);
+        }}
       />
     );
   }
@@ -204,7 +219,7 @@ export default function RoomPage() {
                   <ClueHistory clues={room.messages} />
                 </div>
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
-                  <ChatLog messages={room.messages} />
+                  <ChatLog messages={room.messages} players={room.players} />
                   <form onSubmit={room.handleSendMessage} className="mt-4">
                     <div className="flex gap-2">
                       <input

@@ -1,18 +1,32 @@
-import { useState, FormEvent } from "react";
+import { useState, useEffect, FormEvent } from "react";
+import AvatarPicker from "@/components/AvatarPicker";
+import { LOCAL_STORAGE_AVATAR_KEY, getRandomAvatar } from "@/shared/constants";
 
 interface JoinRoomFormProps {
   roomCode: string;
-  onJoin: (name: string) => void;
+  onJoin: (name: string, avatar: string) => void;
 }
 
 export default function JoinRoomForm({ roomCode, onJoin }: JoinRoomFormProps) {
   const [pendingName, setPendingName] = useState("");
+  const [avatar, setAvatar] = useState("");
+
+  // Initialize avatar from localStorage or random on mount
+  useEffect(() => {
+    const stored = localStorage.getItem(LOCAL_STORAGE_AVATAR_KEY);
+    setAvatar(stored || getRandomAvatar());
+  }, []);
+
+  const handleAvatarSelect = (newAvatar: string) => {
+    setAvatar(newAvatar);
+    localStorage.setItem(LOCAL_STORAGE_AVATAR_KEY, newAvatar);
+  };
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     const trimmed = pendingName.trim();
     if (!trimmed) return;
-    onJoin(trimmed);
+    onJoin(trimmed, avatar);
   };
 
   return (
@@ -27,15 +41,18 @@ export default function JoinRoomForm({ roomCode, onJoin }: JoinRoomFormProps) {
             <label htmlFor="roomName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Your Name
             </label>
-            <input
-              id="roomName"
-              type="text"
-              value={pendingName}
-              onChange={(e) => setPendingName(e.target.value)}
-              placeholder="Enter your name"
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-              autoFocus
-            />
+            <div className="flex items-center gap-3">
+              <AvatarPicker selected={avatar} onSelect={handleAvatarSelect} />
+              <input
+                id="roomName"
+                type="text"
+                value={pendingName}
+                onChange={(e) => setPendingName(e.target.value)}
+                placeholder="Enter your name"
+                className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                autoFocus
+              />
+            </div>
           </div>
           <button
             type="submit"

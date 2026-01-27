@@ -15,10 +15,9 @@ function createPlayer(
   overrides: Partial<Player> & { id: string; name: string }
 ): Player {
   return {
+    avatar: "🐱",
     team: null,
     role: null,
-    connected: true,
-    lastSeen: Date.now(),
     ...overrides,
   };
 }

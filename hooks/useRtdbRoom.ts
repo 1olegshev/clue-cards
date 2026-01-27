@@ -47,6 +47,7 @@ interface BoardCard {
 
 interface PlayerData {
   name: string;
+  avatar: string;
   team: string | null;
   role: string | null;
   connected: boolean;
@@ -103,6 +104,7 @@ function toPlayers(playersData: Record<string, PlayerData> | null): Player[] {
   return Object.entries(playersData).map(([id, p]) => ({
     id,
     name: p.name,
+    avatar: p.avatar || "🐱",
     team: (p.team as Player["team"]) || null,
     role: (p.role as Player["role"]) || null,
   }));
@@ -122,7 +124,7 @@ function toMessages(messagesData: Record<string, MessageData> | null): ChatMessa
     .sort((a, b) => a.timestamp - b.timestamp);
 }
 
-export function useRtdbRoom(roomCode: string, playerName: string): UseRtdbRoomReturn {
+export function useRtdbRoom(roomCode: string, playerName: string, playerAvatar: string): UseRtdbRoomReturn {
   const { setIsLastPlayer, setIsActiveGame, setLeaveRoom } = useGameContext();
 
   const [gameState, setGameState] = useState<GameState | null>(null);
@@ -226,7 +228,7 @@ export function useRtdbRoom(roomCode: string, playerName: string): UseRtdbRoomRe
     });
 
     // Join room and set up onDisconnect
-    actions.joinRoom(roomCode, playerId, playerName)
+    actions.joinRoom(roomCode, playerId, playerName, playerAvatar)
       .then(({ disconnectRef }) => {
         disconnectRefRef.current = disconnectRef;
         setIsConnecting(false);
@@ -246,7 +248,7 @@ export function useRtdbRoom(roomCode: string, playerName: string): UseRtdbRoomRe
         actions.leaveRoom(roomCode, pid).catch(() => {});
       }
     };
-  }, [roomCode, playerName]);
+  }, [roomCode, playerName, playerAvatar]);
 
   // Update context
   const isLast = connectedPlayerCount === 1 && !!gameState?.gameStarted && !gameState?.gameOver;
