@@ -141,7 +141,7 @@ export default function GameBoard({
       case "blue":
         return "text-blue-800";
       case "trap":
-        return "text-gray-700";
+        return "text-gray-500";
       default:
         return "text-yellow-600 dark:text-yellow-800";
     }
