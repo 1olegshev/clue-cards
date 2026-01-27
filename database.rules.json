@@ -59,11 +59,11 @@
         // Clue: any authenticated player, with validation
         "currentClue": {
           ".write": "auth != null",
-          ".validate": "newData === null || (newData.child('word').isString() && newData.child('word').val().length > 0 && newData.child('word').val().length <= 30 && newData.child('count').isNumber() && newData.child('count').val() >= 0)"
+          ".validate": "!newData.exists() || (newData.child('word').isString() && newData.child('word').val().length > 0 && newData.child('word').val().length <= 30 && newData.child('count').isNumber() && newData.child('count').val() >= 0)"
         },
         "remainingGuesses": {
           ".write": "auth != null",
-          ".validate": "newData === null || (newData.isNumber() && newData.val() >= 0)"
+          ".validate": "!newData.exists() || (newData.isNumber() && newData.val() >= 0)"
         },
         
         // Room metadata
@@ -85,7 +85,7 @@
               ".validate": "newData.isBoolean()"
             },
             "revealedBy": {
-              ".validate": "newData === null || newData.isString()"
+              ".validate": "!newData.exists() || newData.isString()"
             },
             "votes": {
               "$oderId": {
@@ -110,10 +110,10 @@
               ".validate": "newData.isString()"
             },
             "team": {
-              ".validate": "newData === null || newData.val() === 'red' || newData.val() === 'blue'"
+              ".validate": "!newData.exists() || newData.val() === 'red' || newData.val() === 'blue'"
             },
             "role": {
-              ".validate": "newData === null || newData.val() === 'clueGiver' || newData.val() === 'guesser'"
+              ".validate": "!newData.exists() || newData.val() === 'clueGiver' || newData.val() === 'guesser'"
             },
             "connected": {
               ".validate": "newData.isBoolean()"
@@ -131,7 +131,7 @@
             ".validate": "newData.hasChildren(['playerName', 'message', 'timestamp', 'type']) && newData.child('message').isString() && newData.child('message').val().length > 0 && newData.child('message').val().length <= 200",
             
             "playerId": {
-              ".validate": "newData === null || newData.isString()"
+              ".validate": "!newData.exists() || newData.isString()"
             },
             "playerName": {
               ".validate": "newData.isString() && newData.val().length > 0"
