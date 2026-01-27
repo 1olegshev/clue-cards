@@ -53,13 +53,13 @@ export default function AvatarPicker({ selected, onSelect }: AvatarPickerProps) 
       {/* Popover Picker */}
       {isOpen && (
         <div className="absolute top-full left-0 mt-2 p-3 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-          <div className="grid grid-cols-6 gap-1.5 w-[252px]">
+          <div className="grid grid-cols-6 gap-2 w-[276px]">
             {AVATARS.map((avatar) => (
               <button
                 key={avatar}
                 type="button"
                 onClick={() => handleSelect(avatar)}
-                className={`w-9 h-9 text-xl rounded-lg flex items-center justify-center transition-all ${
+                className={`w-10 h-10 text-2xl rounded-lg flex items-center justify-center transition-all ${
                   selected === avatar
                     ? "bg-blue-100 dark:bg-blue-900 ring-2 ring-blue-500 scale-110"
                     : "bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"

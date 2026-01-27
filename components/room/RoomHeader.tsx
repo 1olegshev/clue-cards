@@ -100,14 +100,14 @@ export default function RoomHeader({ roomCode, currentPlayer }: RoomHeaderProps)
         </div>
         <div className="flex items-center gap-3">
           {currentPlayer?.team && (
-            <span className={`px-2 py-1 rounded text-white text-xs ${
+            <span className={`px-3 py-1.5 rounded text-white text-sm font-medium ${
               currentPlayer.team === "red" ? "bg-red-600" : "bg-blue-600"
             }`}>
               {currentPlayer.name} • {currentPlayer.team} {currentPlayer.role}
             </span>
           )}
           {!currentPlayer?.team && (
-            <span className="text-gray-600 dark:text-gray-400 text-sm">
+            <span className="text-gray-600 dark:text-gray-400 text-base">
               {currentPlayer?.name}
             </span>
           )}
