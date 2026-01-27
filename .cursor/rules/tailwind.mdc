@@ -7,6 +7,43 @@ globs: ["**/*.tsx", "**/*.ts", "**/*.css"]
 
 This project uses **Tailwind CSS v4**. Use the updated syntax:
 
+## Dark Mode and Theme Variables (IMPORTANT)
+
+Tailwind v4 uses CSS-first configuration. The correct setup in `globals.css`:
+
+```css
+@import "tailwindcss";
+
+/* Enable class-based dark mode */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Define theme variables with @theme directive */
+@theme {
+  --color-background: #ffffff;
+  --color-foreground: #171717;
+  /* ... other variables with --color- prefix */
+}
+
+/* Dark mode overrides (regular CSS, not @theme) */
+.dark {
+  --color-background: #0a0a0a;
+  --color-foreground: #ededed;
+}
+
+/* Base styles */
+html {
+  color: var(--color-foreground);
+  background: var(--color-background);
+}
+```
+
+Key points:
+- Use `@custom-variant dark` for class-based dark mode (NOT in tailwind.config.ts)
+- Use `@theme { }` to register variables with Tailwind
+- Use `--color-*` prefix for color variables (Tailwind v4 convention)
+- Override in `.dark { }` selector for dark mode values
+- The `darkMode: "class"` in tailwind.config.ts is for v3 compatibility only
+
 ## Gradients
 - ❌ `bg-gradient-to-r` → ✅ `bg-linear-to-r`
 - ❌ `bg-gradient-to-l` → ✅ `bg-linear-to-l`
