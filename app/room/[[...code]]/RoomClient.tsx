@@ -249,12 +249,15 @@ export default function RoomPage() {
               </div>
             </div>
 
-            <CompactTeams 
-              players={room.players} 
-              currentPlayerId={room.currentPlayer?.id}
-              isRoomOwner={isRoomOwner}
-              onAddSpectator={(team, playerId) => room.handleSetLobbyRole(team, "guesser", playerId)}
-            />
+            {/* Show compact teams only during active game, not on game over */}
+            {!room.gameState.gameOver && (
+              <CompactTeams 
+                players={room.players} 
+                currentPlayerId={room.currentPlayer?.id}
+                isRoomOwner={isRoomOwner}
+                onAddSpectator={(team, playerId) => room.handleSetLobbyRole(team, "guesser", playerId)}
+              />
+            )}
           </>
         )}
 
@@ -291,7 +294,7 @@ export default function RoomPage() {
           />
         )}
 
-        {/* Game Over - Show Full Teams for Rematch */}
+        {/* Game Over - Show Full Teams for Rematch (allow reassignment) */}
         {room.gameState.gameStarted && room.gameState.gameOver && (
           <TeamLobby
             players={room.players}
@@ -303,7 +306,7 @@ export default function RoomPage() {
             onStartGame={room.handleStartGame}
             onTurnDurationChange={room.handleTurnDurationChange}
             onWordPackChange={room.handleWordPackChange}
-            showControls={false}
+            showControls={true}
           />
         )}
       </div>

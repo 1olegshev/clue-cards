@@ -84,7 +84,9 @@ export default function TeamLobby({
       {/* Normal lobby header */}
       {showControls && !isPaused && (
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-          <h2 className="text-xl font-semibold">Teams ({players.length}/8)</h2>
+          <h2 className="text-xl font-semibold">
+            {gameState.gameOver ? "Teams — Reassign for Rematch" : `Teams (${players.length}/8)`}
+          </h2>
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600 dark:text-gray-400">Words:</span>
@@ -136,7 +138,8 @@ export default function TeamLobby({
                 Randomize
               </button>
             )}
-            {isRoomOwner && showControls ? (
+            {/* Hide Start Game button when game is over (rematch is handled elsewhere) */}
+            {isRoomOwner && showControls && !gameState.gameOver ? (
               <button
                 onClick={onStartGame}
                 disabled={players.filter((p) => p.team && p.role).length < 4}
@@ -145,7 +148,7 @@ export default function TeamLobby({
               >
                 Start Game
               </button>
-            ) : showControls ? (
+            ) : showControls && !gameState.gameOver ? (
               <span className="text-sm text-gray-600 dark:text-gray-400">
                 Only the room owner can start the game
               </span>
@@ -154,9 +157,6 @@ export default function TeamLobby({
         </div>
       )}
 
-      {!showControls && !isPaused && (
-        <h2 className="text-xl font-semibold mb-4">Teams - Ready for Rematch</h2>
-      )}
 
       <div className="grid md:grid-cols-2 gap-6">
         {(["red", "blue"] as const).map((team) => {
