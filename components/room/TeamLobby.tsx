@@ -196,7 +196,7 @@ export default function TeamLobby({
                       onClick={() => onSetRole(team, "clueGiver")}
                       disabled={Boolean(clueGiver) && clueGiver?.id !== currentPlayer?.id}
                       data-testid={`lobby-join-${team}-clueGiver`}
-                      className={`px-2 py-1 rounded text-xs font-semibold ${
+                      className={`px-3 py-1.5 rounded text-sm font-semibold ${
                         clueGiver?.id === currentPlayer?.id
                           ? "bg-gray-800 text-white"
                           : team === "red"
@@ -208,7 +208,7 @@ export default function TeamLobby({
                     </button>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 ml-6">Sees all cards • Gives one-word clues</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2 ml-6">Sees all cards • Gives one-word clues</p>
                 <div className={`rounded-lg p-3 text-base border ${
                   clueGiver?.id === currentPlayer?.id
                     ? "bg-yellow-50 dark:bg-yellow-900/30 border-yellow-400 dark:border-yellow-600"
@@ -239,7 +239,7 @@ export default function TeamLobby({
                     <button
                       onClick={() => onSetRole(team, "guesser")}
                       data-testid={`lobby-join-${team}-guesser`}
-                      className={`px-2 py-1 rounded text-xs font-semibold ${
+                      className={`px-3 py-1.5 rounded text-sm font-semibold ${
                         team === "red"
                           ? "bg-red-100 text-red-800 hover:bg-red-200"
                           : "bg-blue-100 text-blue-800 hover:bg-blue-200"
@@ -249,10 +249,10 @@ export default function TeamLobby({
                     </button>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 ml-6">Guess words based on clues</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2 ml-6">Guess words based on clues</p>
                 <div className="space-y-2 max-h-32 overflow-y-auto">
                   {guessers.length === 0 ? (
-                    <div className="text-sm text-gray-500 dark:text-gray-400">No guessers yet</div>
+                    <div className="text-base text-gray-500 dark:text-gray-400">No guessers yet</div>
                   ) : (
                     guessers.map((player) => (
                       <div key={player.id} className={`rounded-lg px-3 py-2 text-base border flex items-center gap-2 ${
@@ -271,7 +271,7 @@ export default function TeamLobby({
               {currentPlayer?.team === team && showControls && (
                 <button
                   onClick={() => onSetRole(null, null)}
-                  className="px-3 py-1 rounded text-xs font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  className="px-3 py-1.5 rounded text-sm font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300"
                 >
                   Leave Team
                 </button>
@@ -295,18 +295,18 @@ export default function TeamLobby({
                   <div className={`font-medium flex items-center gap-2 ${
                     player.id === currentPlayer?.id ? "text-yellow-700 dark:text-yellow-300" : ""
                   }`}>
-                    <span className="text-xl">{player.avatar}</span>
+                    <span className="text-2xl">{player.avatar}</span>
                     <span className="truncate">{player.name}{player.id === currentPlayer?.id ? " (you)" : ""}</span>
                   </div>
                   {player.team && player.role && (
-                    <div className={`text-sm mt-1 ml-8 ${
+                    <div className={`text-sm mt-1 ml-9 ${
                       player.team === "red" ? "text-red-600 dark:text-red-400" : "text-blue-600 dark:text-blue-400"
                     }`}>
                       {player.team} {player.role === "clueGiver" ? "clue giver" : "guesser"}
                     </div>
                   )}
                   {!player.team || !player.role ? (
-                    <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 ml-8">
+                    <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 ml-9">
                       {isPaused ? "Spectator" : "No team selected"}
                     </div>
                   ) : null}
