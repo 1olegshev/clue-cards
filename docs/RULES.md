@@ -22,8 +22,10 @@ This project follows standard word-guessing game rules, with the following clari
   - Simple plural variants (adding/removing S/ES)
 - Guessers vote on a card first; a teammate must confirm once votes meet a threshold.
 - Room owner can start rematch after game ends, keeping all players.
-- Minimum 4 players required. Teams don't need to be equal size.
+- Minimum 4 players on teams required to start. Teams don't need to be equal size.
 - Players choose a lobby team and role before start; owner can randomize assignments and override choices.
+- Players can remain as spectators (not on a team) when the game starts.
+- Room owner can add spectators to teams as guessers during an ongoing game.
 - Only the room owner can start the game.
 - Room owner can end an active game, returning all players to the lobby.
 

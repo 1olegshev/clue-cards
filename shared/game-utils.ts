@@ -15,10 +15,12 @@ export function shufflePlayers(players: Player[]): Player[] {
 
 /** Check if teams are properly configured to start game */
 export function teamsAreReady(players: Player[]): boolean {
-  if (players.length < 4) return false;
+  // Only count players assigned to teams
+  const assignedPlayers = players.filter((p) => p.team && p.role);
+  if (assignedPlayers.length < 4) return false;
 
-  const redTeam = players.filter((player) => player.team === "red");
-  const blueTeam = players.filter((player) => player.team === "blue");
+  const redTeam = assignedPlayers.filter((player) => player.team === "red");
+  const blueTeam = assignedPlayers.filter((player) => player.team === "blue");
 
   // Each team needs exactly 1 clue giver (game mechanic requirement)
   const redClueGivers = redTeam.filter((player) => player.role === "clueGiver").length;

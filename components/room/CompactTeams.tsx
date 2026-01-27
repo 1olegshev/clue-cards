@@ -3,9 +3,11 @@ import type { Player } from "@/shared/types";
 interface CompactTeamsProps {
   players: Player[];
   currentPlayerId?: string | null;
+  isRoomOwner?: boolean;
+  onAddSpectator?: (team: "red" | "blue", playerId: string) => void;
 }
 
-export default function CompactTeams({ players, currentPlayerId }: CompactTeamsProps) {
+export default function CompactTeams({ players, currentPlayerId, isRoomOwner, onAddSpectator }: CompactTeamsProps) {
   // Spectators are players without a team or role
   const spectators = players.filter((p) => !p.team || !p.role);
 
@@ -87,18 +89,36 @@ export default function CompactTeams({ players, currentPlayerId }: CompactTeamsP
             </svg>
             <span>Spectators ({spectators.length})</span>
           </div>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {spectators.map((p) => (
-              <span
+              <div
                 key={p.id}
-                className={`text-xs px-2 py-0.5 rounded-full ${
+                className={`text-xs px-2 py-1 rounded-lg flex items-center gap-2 ${
                   p.id === currentPlayerId
                     ? "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300"
                     : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                 }`}
               >
-                {p.name}{p.id === currentPlayerId ? " (you)" : ""}
-              </span>
+                <span>{p.name}{p.id === currentPlayerId ? " (you)" : ""}</span>
+                {isRoomOwner && onAddSpectator && (
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => onAddSpectator("red", p.id)}
+                      className="px-1.5 py-0.5 rounded bg-red-200 dark:bg-red-800 text-red-700 dark:text-red-200 hover:bg-red-300 dark:hover:bg-red-700"
+                      title="Add to Red team"
+                    >
+                      +R
+                    </button>
+                    <button
+                      onClick={() => onAddSpectator("blue", p.id)}
+                      className="px-1.5 py-0.5 rounded bg-blue-200 dark:bg-blue-800 text-blue-700 dark:text-blue-200 hover:bg-blue-300 dark:hover:bg-blue-700"
+                      title="Add to Blue team"
+                    >
+                      +B
+                    </button>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </div>

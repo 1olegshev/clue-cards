@@ -227,7 +227,12 @@ export default function RoomPage() {
               </div>
             </div>
 
-            <CompactTeams players={room.players} currentPlayerId={room.currentPlayer?.id} />
+            <CompactTeams 
+              players={room.players} 
+              currentPlayerId={room.currentPlayer?.id}
+              isRoomOwner={isRoomOwner}
+              onAddSpectator={(team, playerId) => room.handleSetLobbyRole(team, "guesser", playerId)}
+            />
           </>
         )}
 

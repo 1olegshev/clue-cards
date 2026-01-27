@@ -500,7 +500,8 @@ export async function setLobbyRole(
   roomCode: string,
   playerId: string,
   team: "red" | "blue" | null,
-  role: "clueGiver" | "guesser" | null
+  role: "clueGiver" | "guesser" | null,
+  requesterId?: string // Owner can assign other players
 ): Promise<void> {
   const db = getDb();
   const roomRef = ref(db, `rooms/${roomCode}`);
@@ -511,11 +512,20 @@ export async function setLobbyRole(
   if (!roomSnap.exists()) throw new Error("Room not found");
 
   const roomData = roomSnap.val() as RoomData;
-  if (roomData.gameStarted && !roomData.gameOver && !roomData.paused) throw new Error("Game in progress");
+  const playersData = (playersSnap.val() || {}) as Record<string, PlayerData>;
+  const playerData = playersData[playerId];
+  const isOwner = requesterId && roomData.ownerId === requesterId;
+  const isSpectator = !playerData?.team || !playerData?.role;
+  
+  // During active game: only allow owner to add spectators as guessers
+  if (roomData.gameStarted && !roomData.gameOver && !roomData.paused) {
+    if (!isOwner) throw new Error("Only owner can add players during game");
+    if (!isSpectator) throw new Error("Can only add spectators during game");
+    if (role === "clueGiver") throw new Error("Can only add as guesser during game");
+  }
 
   // Check for duplicate clue giver
   if (role === "clueGiver" && team) {
-    const playersData = (playersSnap.val() || {}) as Record<string, PlayerData>;
     const existing = Object.entries(playersData).find(
       ([id, p]) => id !== playerId && p.team === team && p.role === "clueGiver"
     );

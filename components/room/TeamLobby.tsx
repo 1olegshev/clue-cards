@@ -5,7 +5,7 @@ interface TeamLobbyProps {
   currentPlayer: Player | null;
   isRoomOwner: boolean;
   gameState: GameState;
-  onSetRole: (team: "red" | "blue" | null, role: "clueGiver" | "guesser" | null) => void;
+  onSetRole: (team: "red" | "blue" | null, role: "clueGiver" | "guesser" | null, targetPlayerId?: string) => void;
   onRandomize: () => void;
   onStartGame: () => void;
   onTurnDurationChange: (duration: number) => void;
@@ -139,7 +139,7 @@ export default function TeamLobby({
             {isRoomOwner && showControls ? (
               <button
                 onClick={onStartGame}
-                disabled={!players.every((player) => player.team && player.role) || players.length < 4}
+                disabled={players.filter((p) => p.team && p.role).length < 4}
                 data-testid="lobby-start-btn"
                 className="bg-green-600 text-white px-4 py-1.5 sm:px-6 sm:py-2 rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm sm:text-base"
               >
@@ -311,9 +311,9 @@ export default function TeamLobby({
               ))}
             </div>
           </div>
-          {!isPaused && players.length < 4 && (
+          {!isPaused && players.filter(p => p.team && p.role).length < 4 && (
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
-              Waiting for {4 - players.length} more player{4 - players.length !== 1 ? "s" : ""}...
+              Waiting for {4 - players.filter(p => p.team && p.role).length} more player{4 - players.filter(p => p.team && p.role).length !== 1 ? "s" : ""} to join teams...
             </p>
           )}
         </>
