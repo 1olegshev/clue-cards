@@ -52,6 +52,7 @@ export default function RoomPage() {
   useTimerSound({
     timeRemaining: timer.timeRemaining,
     isPaused: room.gameState?.paused,
+    isGameOver: room.gameState?.gameOver,
   });
 
   // Background music - changes based on game state

@@ -6,6 +6,8 @@ interface UseTimerSoundOptions {
   timeRemaining: number | null;
   /** Whether the game is paused */
   isPaused?: boolean;
+  /** Whether the game is over (stops all ticks immediately) */
+  isGameOver?: boolean;
   /** Threshold below which normal ticking starts (default: 30 seconds) */
   normalThreshold?: number;
   /** Threshold below which urgent ticking starts (default: 10 seconds) */
@@ -24,6 +26,7 @@ interface UseTimerSoundOptions {
 export function useTimerSound({
   timeRemaining,
   isPaused = false,
+  isGameOver = false,
   normalThreshold = 30,
   urgentThreshold = 10,
   normalInterval = 2000,
@@ -40,8 +43,8 @@ export function useTimerSound({
       intervalRef.current = null;
     }
 
-    // Don't tick if no sound context, timer not active, or paused
-    if (!soundContext || timeRemaining === null || isPaused) {
+    // Don't tick if no sound context, timer not active, paused, or game over
+    if (!soundContext || timeRemaining === null || isPaused || isGameOver) {
       return;
     }
 
@@ -84,6 +87,7 @@ export function useTimerSound({
   }, [
     timeRemaining,
     isPaused,
+    isGameOver,
     normalThreshold,
     urgentThreshold,
     normalInterval,

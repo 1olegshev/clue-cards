@@ -19,7 +19,13 @@ export function useGameTimer(
     }
 
     // Don't run timer when game is paused
-    if (gameState?.gameStarted && gameState.turnStartTime && !gameState.gameOver && !gameState.paused) {
+    // Game over takes priority - always clear timer
+    if (gameState?.gameOver) {
+      setTimeRemaining(null);
+      return;
+    }
+
+    if (gameState?.gameStarted && gameState.turnStartTime && !gameState.paused) {
       // Reset the timeout flag when a new turn starts
       if (timeoutCalledForTurnRef.current !== gameState.turnStartTime) {
         timeoutCalledForTurnRef.current = null;
