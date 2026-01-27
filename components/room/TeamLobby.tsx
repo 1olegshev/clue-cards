@@ -200,8 +200,8 @@ export default function TeamLobby({
                         clueGiver?.id === currentPlayer?.id
                           ? "bg-gray-800 text-white"
                           : team === "red"
-                            ? "bg-red-600 text-white hover:bg-red-700"
-                            : "bg-blue-600 text-white hover:bg-blue-700"
+                            ? "bg-red-team text-white hover:brightness-110"
+                            : "bg-blue-team text-white hover:brightness-110"
                       } disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
                       Join

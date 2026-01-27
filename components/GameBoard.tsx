@@ -168,9 +168,9 @@ export default function GameBoard({
     if (card.revealed) {
       switch (card.team) {
         case "red":
-          return "bg-red-600 text-white";
+          return "bg-red-team text-white";
         case "blue":
-          return "bg-blue-600 text-white";
+          return "bg-blue-team text-white";
         case "trap":
           return "bg-gray-900 text-white";
         default:

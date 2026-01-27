@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 /* Enable class-based dark mode for Tailwind v4 */
+/* stylelint-disable-next-line at-rule-no-unknown */
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* Light theme (default) */
@@ -12,12 +13,14 @@
   --surface-elevated: #ffffff;
   --border: #e5e7eb;
   --muted: #6b7280;
-  --primary: #2563eb;
+  --primary: #3b82f6;
   --primary-foreground: #ffffff;
   --accent: #4f46e5;
-  --red-team: #dc2626;
+  --red-team: #ef4444;
+  --red-team-muted: #f87171;
   --red-team-light: #fef2f2;
-  --blue-team: #2563eb;
+  --blue-team: #3b82f6;
+  --blue-team-muted: #60a5fa;
   --blue-team-light: #eff6ff;
   --neutral-card: #fef3c7;
   --trap: #0f172a;
@@ -31,13 +34,15 @@
   --surface-elevated: #27272a;
   --border: #3f3f46;
   --muted: #a1a1aa;
-  --primary: #3b82f6;
+  --primary: #60a5fa;
   --primary-foreground: #ffffff;
   --accent: #6366f1;
-  --red-team: #ef4444;
-  --red-team-light: rgba(239, 68, 68, 0.15);
-  --blue-team: #3b82f6;
-  --blue-team-light: rgba(59, 130, 246, 0.15);
+  --red-team: #f87171;
+  --red-team-muted: #fca5a5;
+  --red-team-light: rgba(248, 113, 113, 0.15);
+  --blue-team: #60a5fa;
+  --blue-team-muted: #93c5fd;
+  --blue-team-light: rgba(96, 165, 250, 0.15);
   --neutral-card: #78716c;
   --trap: #18181b;
 }

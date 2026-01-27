@@ -115,7 +115,7 @@ export default function RoomHeader({ roomCode, currentPlayer, isRoomOwner }: Roo
         <div className="flex items-center gap-3">
           {currentPlayer?.team && (
             <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-white text-sm font-medium ${
-              currentPlayer.team === "red" ? "bg-red-600" : "bg-blue-600"
+              currentPlayer.team === "red" ? "bg-red-team" : "bg-blue-team"
             }`}>
               {isRoomOwner && <CrownIcon className="w-4 h-4 text-yellow-300" />}
               {currentPlayer.name} • {currentPlayer.team} {currentPlayer.role}
