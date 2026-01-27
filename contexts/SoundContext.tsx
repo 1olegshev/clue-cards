@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import useSound from "use-sound";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { LOCAL_STORAGE_SOUND_MUTED_KEY, LOCAL_STORAGE_SOUND_VOLUME_KEY } from "@/shared/constants";
@@ -19,75 +19,13 @@ interface SoundContextValue {
 
 const SoundContext = createContext<SoundContextValue | undefined>(undefined);
 
-// Web Audio API synthesizer for timer ticks only
-class TickSynthesizer {
-  private audioContext: AudioContext | null = null;
-  private initialized = false;
-
-  init() {
-    if (this.initialized) return;
-    try {
-      this.audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-      this.initialized = true;
-    } catch {
-      console.warn("Web Audio API not supported");
-    }
-  }
-
-  private createTone(frequency: number, duration: number, volume: number) {
-    if (!this.audioContext) return;
-
-    const oscillator = this.audioContext.createOscillator();
-    const gainNode = this.audioContext.createGain();
-    const now = this.audioContext.currentTime;
-
-    oscillator.type = "sine";
-    oscillator.frequency.setValueAtTime(frequency, now);
-    
-    gainNode.gain.setValueAtTime(volume, now);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
-
-    oscillator.connect(gainNode);
-    gainNode.connect(this.audioContext.destination);
-
-    oscillator.start(now);
-    oscillator.stop(now + duration);
-  }
-
-  // Normal tick: Soft, low click
-  playTick(volume: number) {
-    this.init();
-    this.createTone(800, 0.05, volume * 0.08);
-  }
-
-  // Urgent tick: Higher, sharper
-  playTickUrgent(volume: number) {
-    this.init();
-    if (!this.audioContext) return;
-    
-    const now = this.audioContext.currentTime;
-    // Two-tone for urgency
-    this.createTone(1200, 0.06, volume * 0.12);
-    
-    // Add second higher tone
-    const osc2 = this.audioContext.createOscillator();
-    const gain2 = this.audioContext.createGain();
-    osc2.type = "sine";
-    osc2.frequency.setValueAtTime(1500, now);
-    gain2.gain.setValueAtTime(volume * 0.06, now);
-    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
-    osc2.connect(gain2);
-    gain2.connect(this.audioContext.destination);
-    osc2.start(now);
-    osc2.stop(now + 0.04);
-  }
-}
-
 // Ref to store play functions (shared between components)
 const playFunctionsRef: { current: {
   playGameStart: () => void;
   playTurnChange: () => void;
   playGameOver: () => void;
+  playTick: () => void;
+  playTickUrgent: () => void;
 } | null } = { current: null };
 
 /**
@@ -120,10 +58,24 @@ function PlayFunctionCapture({
     soundEnabled,
   });
 
+  // Realistic clock tick sounds - interrupt prevents overlapping
+  const [playTick] = useSound("/sounds/tick.mp3", { 
+    volume: volume * 0.5,
+    soundEnabled,
+    interrupt: true,
+  });
+  
+  // Urgent tick - distinct electronic beep for clear urgency
+  const [playTickUrgent] = useSound("/sounds/tick-urgent.mp3", { 
+    volume: volume * 0.4,
+    soundEnabled,
+    interrupt: true,
+  });
+
   // Update shared ref when play functions change
   useEffect(() => {
-    playFunctionsRef.current = { playGameStart, playTurnChange, playGameOver };
-  }, [playGameStart, playTurnChange, playGameOver]);
+    playFunctionsRef.current = { playGameStart, playTurnChange, playGameOver, playTick, playTickUrgent };
+  }, [playGameStart, playTurnChange, playGameOver, playTick, playTickUrgent]);
 
   return <>{children}</>;
 }
@@ -133,12 +85,6 @@ export function SoundProvider({ children }: { children: ReactNode }) {
   const [isMuted, setIsMutedState] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const prefersReducedMotion = usePrefersReducedMotion();
-  const tickSynthesizerRef = useRef<TickSynthesizer | null>(null);
-
-  // Initialize tick synthesizer
-  useEffect(() => {
-    tickSynthesizerRef.current = new TickSynthesizer();
-  }, []);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -193,13 +139,13 @@ export function SoundProvider({ children }: { children: ReactNode }) {
         playFunctionsRef.current?.playGameOver();
         break;
       case "tick":
-        tickSynthesizerRef.current?.playTick(volume);
+        playFunctionsRef.current?.playTick();
         break;
       case "tickUrgent":
-        tickSynthesizerRef.current?.playTickUrgent(volume);
+        playFunctionsRef.current?.playTickUrgent();
         break;
     }
-  }, [soundEnabled, volume]);
+  }, [soundEnabled]);
 
   return (
     <SoundContext.Provider value={{

@@ -136,16 +136,14 @@ Input validation utilities in `shared/validation.ts`:
 
 ### Sound System
 
-Hybrid approach: audio files for game events (via `use-sound`/Howler.js), Web Audio API for timer ticks.
+All sounds use audio files via `use-sound`/Howler.js for realistic, high-quality playback.
 
 **Audio Files** (`/public/sounds/`):
 - `game-start.mp3` — Fantasy success notification when game begins
 - `turn-change.mp3` — Quick software tone when turn switches teams
-- `game-over.mp3` — Celebration sound when a team wins
-
-**Synthesized Sounds** (Web Audio API):
-- `tick` — Soft 800Hz sine tone every 2s in the last 30 seconds
-- `tickUrgent` — Sharper 1200Hz+1500Hz dual tone every 0.5s in the last 10 seconds
+- `game-over.mp3` — Crowd applause celebration when a team wins
+- `tick.mp3` — Soft click sound every 2s in the last 30 seconds
+- `tick-urgent.mp3` — Fast mechanical alarm clock tic-tac every 0.5s in the last 10 seconds
 
 **Sound Sources:**
 Audio files sourced from [Mixkit](https://mixkit.co/free-sound-effects/) under the Mixkit License (free for commercial use).
