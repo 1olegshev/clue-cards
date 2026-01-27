@@ -32,6 +32,7 @@ export function useRoomDerivedState(
   const isMyTurn = useMemo(() => {
     return Boolean(
       gameState?.gameStarted &&
+      !gameState?.gameOver &&
       currentPlayer?.team === gameState.currentTeam &&
       currentPlayer?.role === "guesser"
     );

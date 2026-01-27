@@ -205,37 +205,70 @@ export async function updateDisconnectBehavior(
   }
 }
 
+// Grace period before transferring ownership (in milliseconds)
+// Allows for page refreshes, network switches (WiFi → mobile), etc.
+export const OWNER_DISCONNECT_GRACE_PERIOD_MS = 90 * 1000; // 90 seconds
+
+export interface ReassignResult {
+  /** New owner's name if reassigned */
+  newOwnerName: string | null;
+  /** If true, owner is disconnected but within grace period - caller should retry later */
+  withinGracePeriod: boolean;
+  /** Milliseconds remaining in grace period (only if withinGracePeriod is true) */
+  gracePeriodRemainingMs: number;
+}
+
 /**
  * Check if the room owner is disconnected and reassign to another connected player.
- * Returns the new owner's name if reassigned, null otherwise.
+ * Returns information about the result, including whether we're within grace period.
  * 
  * @param addMessage - Whether to add a system message. Set to false when called
  *                     from listeners to avoid duplicate messages from race conditions.
+ * @param skipGracePeriod - If true, skip the grace period check (used when owner explicitly leaves)
  */
 export async function reassignOwnerIfNeeded(
   roomCode: string,
-  addMessage: boolean = false
-): Promise<string | null> {
+  addMessage: boolean = false,
+  skipGracePeriod: boolean = false
+): Promise<ReassignResult> {
   const db = getDb();
   const roomRef = ref(db, `rooms/${roomCode}`);
   const playersRef = ref(db, `rooms/${roomCode}/players`);
 
   const [roomSnap, playersSnap] = await Promise.all([get(roomRef), get(playersRef)]);
-  if (!roomSnap.exists() || !playersSnap.exists()) return null;
+  if (!roomSnap.exists() || !playersSnap.exists()) {
+    return { newOwnerName: null, withinGracePeriod: false, gracePeriodRemainingMs: 0 };
+  }
 
   const roomData = roomSnap.val() as RoomData;
   const players = playersSnap.val() as Record<string, PlayerData>;
   
   // Check if current owner is disconnected
   const currentOwner = players[roomData.ownerId];
-  if (currentOwner?.connected) return null; // Owner is still connected
+  if (currentOwner?.connected) {
+    return { newOwnerName: null, withinGracePeriod: false, gracePeriodRemainingMs: 0 };
+  }
+  
+  // Check grace period - only transfer if owner has been disconnected long enough
+  // This prevents accidental transfers during page refreshes or network switches
+  if (!skipGracePeriod && currentOwner?.lastSeen) {
+    const disconnectedFor = Date.now() - currentOwner.lastSeen;
+    if (disconnectedFor < OWNER_DISCONNECT_GRACE_PERIOD_MS) {
+      const remaining = OWNER_DISCONNECT_GRACE_PERIOD_MS - disconnectedFor;
+      return { newOwnerName: null, withinGracePeriod: true, gracePeriodRemainingMs: remaining };
+    }
+  }
   
   // Find first connected player to become new owner
   const newOwnerEntry = Object.entries(players).find(([, p]) => p.connected);
-  if (!newOwnerEntry) return null; // No connected players
+  if (!newOwnerEntry) {
+    return { newOwnerName: null, withinGracePeriod: false, gracePeriodRemainingMs: 0 };
+  }
   
   const [newOwnerId, newOwnerData] = newOwnerEntry;
-  if (newOwnerId === roomData.ownerId) return null; // Already owner
+  if (newOwnerId === roomData.ownerId) {
+    return { newOwnerName: null, withinGracePeriod: false, gracePeriodRemainingMs: 0 };
+  }
   
   // Reassign ownership
   await update(roomRef, { ownerId: newOwnerId });
@@ -251,7 +284,7 @@ export async function reassignOwnerIfNeeded(
     });
   }
   
-  return newOwnerData.name;
+  return { newOwnerName: newOwnerData.name, withinGracePeriod: false, gracePeriodRemainingMs: 0 };
 }
 
 /**
@@ -292,7 +325,8 @@ export async function leaveRoom(roomCode: string, playerId: string): Promise<voi
     await update(playerRef, { connected: false, lastSeen: serverTimestamp() });
     
     // Reassign owner if the leaving player was the owner (add message since this is explicit leave)
-    await reassignOwnerIfNeeded(roomCode, true);
+    // Skip grace period since this is an explicit leave action
+    await reassignOwnerIfNeeded(roomCode, true, true);
   }
 }
 
@@ -703,8 +737,10 @@ export async function confirmReveal(roomCode: string, playerId: string, cardInde
   }
 
   const card = board[cardIndex];
+  // Count all guessers on the team (not just connected) so threshold stays
+  // consistent even if someone's connection temporarily drops
   const guessers = Object.values(playersData).filter(
-    (p) => p.team === roomData.currentTeam && p.role === "guesser" && p.connected
+    (p) => p.team === roomData.currentTeam && p.role === "guesser"
   );
   const required = getRequiredVotes(guessers.length);
   const voteCount = Object.keys(card.votes || {}).length;
@@ -765,8 +801,16 @@ export async function confirmReveal(roomCode: string, playerId: string, cardInde
   } else if (!isCorrect || newGuesses === 0) {
     const newTeam = roomData.currentTeam === "red" ? "blue" : "red";
     const pause = checkPause(playersData, newTeam, false);
+    // Clear votes from all unrevealed cards when turn ends
+    const boardVotesCleared: Record<string, null> = {};
+    board.forEach((c, i) => {
+      if (!c.revealed && i !== cardIndex) {
+        boardVotesCleared[`board/${i}/votes`] = null;
+      }
+    });
     await update(roomRef, {
       ...cardUpdate,
+      ...boardVotesCleared,
       currentTeam: newTeam,
       currentClue: null,
       remainingGuesses: null,
@@ -815,10 +859,18 @@ export async function endTurn(roomCode: string): Promise<void> {
   const playersData = (playersSnap.val() || {}) as Record<string, PlayerData>;
   const newTeam = roomData.currentTeam === "red" ? "blue" : "red";
   const pause = checkPause(playersData, newTeam, false);
-  const board = (roomData.board || []).map((c) => ({ ...c, votes: {} }));
+  
+  // Clear votes from all unrevealed cards using explicit paths
+  const board = roomData.board || [];
+  const votesCleared: Record<string, null> = {};
+  board.forEach((c, i) => {
+    if (!c.revealed) {
+      votesCleared[`board/${i}/votes`] = null;
+    }
+  });
 
   await update(roomRef, {
-    board,
+    ...votesCleared,
     currentTeam: newTeam,
     currentClue: null,
     remainingGuesses: null,

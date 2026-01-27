@@ -295,30 +295,30 @@ describe('getRequiredVotes', () => {
     expect(getRequiredVotes(1)).toBe(1);
   });
 
-  it('returns 1 for 2 guessers (ceil(2/2) = 1)', () => {
+  it('returns 1 for 2 guessers', () => {
     expect(getRequiredVotes(2)).toBe(1);
   });
 
-  it('returns 2 for 3 guessers (ceil(3/2) = 2)', () => {
-    expect(getRequiredVotes(3)).toBe(2);
+  it('returns 1 for 3 guessers', () => {
+    expect(getRequiredVotes(3)).toBe(1);
   });
 
-  it('returns 2 for 4 guessers (ceil(4/2) = 2)', () => {
+  it('returns 2 for 4 guessers (threshold kicks in)', () => {
     expect(getRequiredVotes(4)).toBe(2);
   });
 
-  it('returns 3 for 5 guessers (ceil(5/2) = 3)', () => {
-    expect(getRequiredVotes(5)).toBe(3);
+  it('returns 2 for 5 guessers', () => {
+    expect(getRequiredVotes(5)).toBe(2);
   });
 
-  it('returns 3 for 6 guessers (ceil(6/2) = 3)', () => {
-    expect(getRequiredVotes(6)).toBe(3);
+  it('returns 2 for 6 guessers', () => {
+    expect(getRequiredVotes(6)).toBe(2);
   });
 
-  it('caps at 3 for large teams', () => {
-    expect(getRequiredVotes(10)).toBe(3);
-    expect(getRequiredVotes(20)).toBe(3);
-    expect(getRequiredVotes(100)).toBe(3);
+  it('caps at 2 for large teams', () => {
+    expect(getRequiredVotes(10)).toBe(2);
+    expect(getRequiredVotes(20)).toBe(2);
+    expect(getRequiredVotes(100)).toBe(2);
   });
 });
 

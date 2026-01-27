@@ -22,7 +22,8 @@ This project follows standard word-guessing game rules, with the following clari
   - Prefix/suffix relationships (e.g., "farm" blocked if "farmer" on board, but "war" allowed even if "dwarf" on board)
   - Simple plural variants (adding/removing S/ES)
 - Guessers vote on a card first; a teammate must confirm once votes meet a threshold.
-  - Vote threshold: `min(3, ceil(guesserCount / 2))` — requires 1 vote for 1-2 guessers, 2 for 3-4, 3 for 5+.
+  - Vote threshold: 1 vote for 1-3 guessers, 2 votes for 4+ guessers.
+  - Threshold is based on total guessers assigned to the team (not affected by temporary disconnections).
 - Room owner can start rematch after game ends. Players can reassign roles before rematch, or owner can randomize teams.
 - Minimum 4 players on teams required to start. Teams don't need to be equal size.
 - Players choose a lobby team and role before start; owner can randomize assignments and override choices.
@@ -52,5 +53,10 @@ The game pauses automatically at **turn transitions** if the incoming team lacks
 - Leaving the room (navigation or tab close) marks the player as disconnected.
 - The pause check only happens at turn boundaries, not in real-time.
 - Players can rejoin by returning to the room with the same session.
+
+**Owner transfer:**
+- If the room owner disconnects for 90+ seconds, ownership transfers to another connected player.
+- This grace period allows for page refreshes, network switches (WiFi → mobile data), etc.
+- If the owner explicitly leaves (clicks Leave Room), ownership transfers immediately.
 
 If we introduce deviations or house rules, list them here explicitly.

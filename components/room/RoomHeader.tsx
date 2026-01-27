@@ -4,6 +4,20 @@ import type { Player } from "@/shared/types";
 interface RoomHeaderProps {
   roomCode: string;
   currentPlayer: Player | null;
+  isRoomOwner: boolean;
+}
+
+function CrownIcon({ className }: { className?: string }) {
+  return (
+    <svg 
+      className={className} 
+      viewBox="0 0 24 24" 
+      fill="currentColor"
+      aria-label="Room owner"
+    >
+      <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z" />
+    </svg>
+  );
 }
 
 async function copyToClipboard(text: string): Promise<boolean> {
@@ -34,7 +48,7 @@ async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
-export default function RoomHeader({ roomCode, currentPlayer }: RoomHeaderProps) {
+export default function RoomHeader({ roomCode, currentPlayer, isRoomOwner }: RoomHeaderProps) {
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
 
@@ -100,14 +114,16 @@ export default function RoomHeader({ roomCode, currentPlayer }: RoomHeaderProps)
         </div>
         <div className="flex items-center gap-3">
           {currentPlayer?.team && (
-            <span className={`px-3 py-1.5 rounded text-white text-sm font-medium ${
+            <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-white text-sm font-medium ${
               currentPlayer.team === "red" ? "bg-red-600" : "bg-blue-600"
             }`}>
+              {isRoomOwner && <CrownIcon className="w-4 h-4 text-yellow-300" />}
               {currentPlayer.name} • {currentPlayer.team} {currentPlayer.role}
             </span>
           )}
           {!currentPlayer?.team && (
-            <span className="text-gray-600 dark:text-gray-400 text-base">
+            <span className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400 text-base">
+              {isRoomOwner && <CrownIcon className="w-4 h-4 text-yellow-500" />}
               {currentPlayer?.name}
             </span>
           )}

@@ -48,8 +48,7 @@ export function teamsAreReady(players: Player[]): boolean {
 
 /** Calculate required votes to reveal a card */
 export function getRequiredVotes(guesserCount: number): number {
-  if (guesserCount <= 1) return 1;
-  return Math.min(3, Math.ceil(guesserCount / 2));
+  return guesserCount >= 4 ? 2 : 1;
 }
 
 // ============================================================================

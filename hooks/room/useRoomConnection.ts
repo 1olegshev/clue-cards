@@ -45,6 +45,7 @@ export function useRoomConnection(
   const disconnectRefRef = useRef<DatabaseReference | null>(null);
   const wasConnectedRef = useRef<boolean | null>(null);
   const leaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const ownerReassignTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Main effect: join room and set up listeners
   useEffect(() => {
@@ -138,7 +139,29 @@ export function useRoomConnection(
           
           // Only the first connected player (by ID order) should attempt reassignment
           if (connectedPlayerIds[0] === playerId) {
-            actions.reassignOwnerIfNeeded(roomCode).catch((err) => {
+            // Cancel any pending reassign timeout since we're checking now
+            if (ownerReassignTimeoutRef.current) {
+              clearTimeout(ownerReassignTimeoutRef.current);
+              ownerReassignTimeoutRef.current = null;
+            }
+            
+            actions.reassignOwnerIfNeeded(roomCode).then((result) => {
+              if (isCleanedUp) return;
+              
+              // If owner is disconnected but within grace period, schedule a re-check
+              if (result.withinGracePeriod && result.gracePeriodRemainingMs > 0) {
+                // Add a small buffer to ensure we're past the grace period
+                const delay = result.gracePeriodRemainingMs + 1000;
+                ownerReassignTimeoutRef.current = setTimeout(() => {
+                  if (isCleanedUp) return;
+                  ownerReassignTimeoutRef.current = null;
+                  // Re-check - this time it should transfer if owner is still disconnected
+                  actions.reassignOwnerIfNeeded(roomCode).catch((err) => {
+                    console.warn("[Room] Failed to reassign owner after grace period:", err.message);
+                  });
+                }, delay);
+              }
+            }).catch((err) => {
               // Log but don't show to user - this is a background operation
               console.warn("[Room] Failed to reassign owner:", err.message);
             });
@@ -209,6 +232,12 @@ export function useRoomConnection(
       
       // Reset connection tracking ref
       wasConnectedRef.current = null;
+      
+      // Cancel any pending owner reassignment timeout
+      if (ownerReassignTimeoutRef.current) {
+        clearTimeout(ownerReassignTimeoutRef.current);
+        ownerReassignTimeoutRef.current = null;
+      }
       
       // Delay leaveRoom to prevent false disconnections from component remounts
       // (e.g., parent context changes causing tree recreation).
