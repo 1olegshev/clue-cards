@@ -2,6 +2,11 @@
 
 Core state lives in `shared/types.ts` and is stored in Firebase Realtime Database.
 
+**Type Structure:**
+- Client types: `Card`, `Player`, `GameState`, `ChatMessage` — Used in React components
+- Firebase types: `FirebaseBoardCard`, `FirebasePlayerData`, `FirebaseRoomData` — Match RTDB schema exactly
+- Transform functions in `hooks/room/types.ts` convert between Firebase and client types
+
 ### Realtime Database Data Model
 
 ```json
@@ -197,9 +202,51 @@ Audio files sourced from [Mixkit](https://mixkit.co/free-sound-effects/) under t
 | `lib/firebase.ts` | Firebase app/auth/database initialization |
 | `lib/firebase-auth.ts` | Anonymous sign-in helper |
 | `lib/rtdb-actions.ts` | All Firebase Realtime Database operations |
-| `shared/types.ts` | TypeScript types for game state |
+| `lib/retry.ts` | Retry utility with exponential backoff for network operations |
+| `shared/types.ts` | TypeScript types for game state and Firebase data structures |
 | `shared/game-utils.ts` | Pure game logic (vote threshold, clue validation) |
 | `shared/validation.ts` | Input sanitization and validation utilities |
 | `shared/words.ts` | Word lists and board generation |
 | `shared/constants.ts` | Game config, localStorage keys, avatars |
 | `database.rules.json` | Firebase security rules (with server-side validation) |
+
+### Utilities
+
+**Retry Logic** (`lib/retry.ts`):
+- `withRetry(fn, options)` — Wraps async functions with exponential backoff retry
+- `isRetryableError(error)` — Distinguishes network errors (retry) from validation errors (don't retry)
+- Applied to critical operations: chat messages, game actions
+
+**Connection Indicator** (`components/ConnectionIndicator.tsx`):
+- Shows "Offline" badge in Navbar when Firebase connection is lost
+- Uses Firebase `.info/connected` for real-time status monitoring
+
+## Security
+
+### Firebase Security Rules
+
+The `database.rules.json` file enforces server-side validation:
+
+**Write Permissions:**
+- Room creation: Any authenticated user
+- Room deletion: Owner only
+- Owner reassignment: Current owner, or any player if owner is disconnected
+- Game state (`gameStarted`): Owner only
+- Turn state (`currentTeam`, `gameOver`, `winner`, etc.): Owner or guessers
+- Board modifications: Owner, clue giver, or guesser
+- Vote modifications: Only the voting player can modify their own vote
+- Player data: Self or owner
+- Messages: Any authenticated player can send; owner can delete all
+
+**Validation Rules:**
+- Turn duration: Must be 30, 60, or 90 seconds; only settable before game starts
+- Word pack: Must be "classic" or "kahoot"; only settable before game starts
+- Clue format: Word 1-30 chars, count >= 0
+- Player name: 1-20 characters
+- Chat message: 1-200 characters
+
+**Limitations** (validated client-side only):
+- Clue word not matching board words
+- Duplicate clue giver prevention
+- Vote threshold logic
+- Teams ready validation

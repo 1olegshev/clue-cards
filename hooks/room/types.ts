@@ -2,38 +2,43 @@
  * Shared types for room hooks
  */
 
-import type { GameState, Player, ChatMessage, RoomClosedReason, Card, WordPack } from "@/shared/types";
+import type {
+  GameState,
+  Player,
+  ChatMessage,
+  RoomClosedReason,
+  Card,
+  WordPack,
+  FirebaseBoardCard,
+  FirebasePlayerData,
+  FirebaseMessageData,
+  FirebaseRoomData,
+} from "@/shared/types";
 
-export interface BoardCard {
-  word: string;
-  team: string;
-  revealed: boolean;
-  revealedBy: string | null;
-  votes: Record<string, boolean>;
-}
+// Re-export Firebase types for convenience
+export type { FirebaseBoardCard, FirebasePlayerData, FirebaseMessageData, FirebaseRoomData };
 
-export interface PlayerData {
-  name: string;
-  avatar: string;
-  team: string | null;
-  role: string | null;
-  connected: boolean;
-  lastSeen: number;
-}
-
-export interface MessageData {
-  playerId: string | null;
-  playerName: string;
-  message: string;
-  timestamp: number;
-  type: string;
-}
+// Alias for shorter names in this module
+export type BoardCard = FirebaseBoardCard;
+export type PlayerData = FirebasePlayerData;
+export type MessageData = FirebaseMessageData;
+export type RoomData = FirebaseRoomData;
 
 // Transform functions
-export function toGameState(roomCode: string, roomData: any, players: Player[]): GameState | null {
-  if (!roomData) return null;
-  const boardData: BoardCard[] = roomData.board || [];
 
+/**
+ * Transform Firebase room data into client GameState.
+ * Handles the conversion from Firebase's Record-based votes to array-based cardVotes.
+ */
+export function toGameState(
+  roomCode: string,
+  roomData: FirebaseRoomData | null,
+  players: Player[]
+): GameState | null {
+  if (!roomData) return null;
+  const boardData: FirebaseBoardCard[] = roomData.board || [];
+
+  // Convert votes from Record<string, boolean> to string[] per card
   const cardVotes: Record<number, string[]> = {};
   boardData.forEach((c, i) => {
     const votes = c.votes ? Object.keys(c.votes).filter((id) => c.votes[id]) : [];
@@ -67,18 +72,24 @@ export function toGameState(roomCode: string, roomData: any, players: Player[]):
   };
 }
 
-export function toPlayers(playersData: Record<string, PlayerData> | null): Player[] {
+/**
+ * Transform Firebase players data into client Player array.
+ */
+export function toPlayers(playersData: Record<string, FirebasePlayerData> | null): Player[] {
   if (!playersData) return [];
   return Object.entries(playersData).map(([id, p]) => ({
     id,
     name: p.name,
     avatar: p.avatar || "🐱",
-    team: (p.team as Player["team"]) || null,
-    role: (p.role as Player["role"]) || null,
+    team: p.team || null,
+    role: p.role || null,
   }));
 }
 
-export function toMessages(messagesData: Record<string, MessageData> | null): ChatMessage[] {
+/**
+ * Transform Firebase messages data into client ChatMessage array.
+ */
+export function toMessages(messagesData: Record<string, FirebaseMessageData> | null): ChatMessage[] {
   if (!messagesData) return [];
   return Object.entries(messagesData)
     .map(([id, m]) => ({
@@ -87,10 +98,10 @@ export function toMessages(messagesData: Record<string, MessageData> | null): Ch
       playerName: m.playerName,
       message: m.message,
       timestamp: m.timestamp || Date.now(),
-      type: m.type as ChatMessage["type"],
+      type: m.type,
     }))
     .sort((a, b) => a.timestamp - b.timestamp);
 }
 
-// Re-export types for convenience
+// Re-export client types for convenience
 export type { GameState, Player, ChatMessage, RoomClosedReason, WordPack };

@@ -2,78 +2,66 @@
   "rules": {
     "rooms": {
       "$roomCode": {
-        // Must be authenticated to read entire room
         ".read": "auth != null",
-        
-        // Allow room creation (when room doesn't exist)
-        ".write": "auth != null && !data.exists()",
-        
-        // Owner ID can only be changed if:
-        // - Creating room (no existing owner)
-        // - Current owner is changing it (reassignment)
+        ".write": "auth != null && (!data.exists() || root.child('rooms').child($roomCode).child('ownerId').val() === auth.uid)",
+
         "ownerId": {
-          ".write": "auth != null && (!data.exists() || data.val() === auth.uid)"
+          ".write": "auth != null && (!data.exists() || data.val() === auth.uid || root.child('rooms').child($roomCode).child('players').child(data.val()).child('connected').val() === false)"
         },
-        
-        // Game state fields: only room owner can modify
+
         "gameStarted": {
           ".write": "auth != null && root.child('rooms').child($roomCode).child('ownerId').val() === auth.uid"
         },
         "gameOver": {
-          ".write": "auth != null && root.child('rooms').child($roomCode).child('ownerId').val() === auth.uid"
+          ".write": "auth != null && (root.child('rooms').child($roomCode).child('ownerId').val() === auth.uid || root.child('rooms').child($roomCode).child('players').child(auth.uid).child('role').val() === 'guesser')"
         },
         "winner": {
-          ".write": "auth != null && root.child('rooms').child($roomCode).child('ownerId').val() === auth.uid"
+          ".write": "auth != null && (root.child('rooms').child($roomCode).child('ownerId').val() === auth.uid || root.child('rooms').child($roomCode).child('players').child(auth.uid).child('role').val() === 'guesser')"
         },
         "paused": {
-          ".write": "auth != null && root.child('rooms').child($roomCode).child('ownerId').val() === auth.uid"
+          ".write": "auth != null && (root.child('rooms').child($roomCode).child('ownerId').val() === auth.uid || root.child('rooms').child($roomCode).child('players').child(auth.uid).child('role').val() === 'guesser')"
         },
         "pauseReason": {
-          ".write": "auth != null && root.child('rooms').child($roomCode).child('ownerId').val() === auth.uid"
+          ".write": "auth != null && (root.child('rooms').child($roomCode).child('ownerId').val() === auth.uid || root.child('rooms').child($roomCode).child('players').child(auth.uid).child('role').val() === 'guesser')"
         },
         "pausedForTeam": {
-          ".write": "auth != null && root.child('rooms').child($roomCode).child('ownerId').val() === auth.uid"
+          ".write": "auth != null && (root.child('rooms').child($roomCode).child('ownerId').val() === auth.uid || root.child('rooms').child($roomCode).child('players').child(auth.uid).child('role').val() === 'guesser')"
         },
-        
-        // Turn state: any authenticated player can modify (for turn flow)
+
         "currentTeam": {
-          ".write": "auth != null"
+          ".write": "auth != null && (root.child('rooms').child($roomCode).child('ownerId').val() === auth.uid || root.child('rooms').child($roomCode).child('players').child(auth.uid).child('role').val() === 'guesser')"
         },
         "startingTeam": {
           ".write": "auth != null && root.child('rooms').child($roomCode).child('ownerId').val() === auth.uid"
         },
         "turnStartTime": {
-          ".write": "auth != null"
+          ".write": "auth != null && (root.child('rooms').child($roomCode).child('ownerId').val() === auth.uid || root.child('rooms').child($roomCode).child('players').child(auth.uid).child('role').val() === 'guesser' || root.child('rooms').child($roomCode).child('players').child(auth.uid).child('role').val() === 'clueGiver')"
         },
         "turnDuration": {
-          ".write": "auth != null && root.child('rooms').child($roomCode).child('ownerId').val() === auth.uid",
+          ".write": "auth != null && root.child('rooms').child($roomCode).child('ownerId').val() === auth.uid && !root.child('rooms').child($roomCode).child('gameStarted').val()",
           ".validate": "newData.isNumber() && (newData.val() === 30 || newData.val() === 60 || newData.val() === 90)"
         },
-        
-        // Word pack: only owner can set, must be valid
+
         "wordPack": {
-          ".write": "auth != null && root.child('rooms').child($roomCode).child('ownerId').val() === auth.uid",
+          ".write": "auth != null && root.child('rooms').child($roomCode).child('ownerId').val() === auth.uid && !root.child('rooms').child($roomCode).child('gameStarted').val()",
           ".validate": "newData.isString() && (newData.val() === 'classic' || newData.val() === 'kahoot')"
         },
-        
-        // Clue: any authenticated player, with validation
+
         "currentClue": {
-          ".write": "auth != null",
+          ".write": "auth != null && (root.child('rooms').child($roomCode).child('ownerId').val() === auth.uid || root.child('rooms').child($roomCode).child('players').child(auth.uid).child('role').val() === 'clueGiver' || root.child('rooms').child($roomCode).child('players').child(auth.uid).child('role').val() === 'guesser')",
           ".validate": "!newData.exists() || (newData.child('word').isString() && newData.child('word').val().length > 0 && newData.child('word').val().length <= 30 && newData.child('count').isNumber() && newData.child('count').val() >= 0)"
         },
         "remainingGuesses": {
-          ".write": "auth != null",
+          ".write": "auth != null && (root.child('rooms').child($roomCode).child('ownerId').val() === auth.uid || root.child('rooms').child($roomCode).child('players').child(auth.uid).child('role').val() === 'clueGiver' || root.child('rooms').child($roomCode).child('players').child(auth.uid).child('role').val() === 'guesser')",
           ".validate": "!newData.exists() || (newData.isNumber() && newData.val() >= 0)"
         },
-        
-        // Room metadata
+
         "createdAt": {
           ".write": "auth != null && !data.exists()"
         },
-        
-        // Board: granular control over cards
+
         "board": {
-          ".write": "auth != null",
+          ".write": "auth != null && (root.child('rooms').child($roomCode).child('ownerId').val() === auth.uid || root.child('rooms').child($roomCode).child('players').child(auth.uid).child('role').val() === 'clueGiver' || root.child('rooms').child($roomCode).child('players').child(auth.uid).child('role').val() === 'guesser')",
           "$cardIndex": {
             "word": {
               ".validate": "newData.isString()"
@@ -88,21 +76,18 @@
               ".validate": "!newData.exists() || newData.isString()"
             },
             "votes": {
-              "$oderId": {
-                // Players can only set/remove their own vote
-                ".write": "auth != null && $oderId === auth.uid",
+              "$voterId": {
+                ".write": "auth != null && $voterId === auth.uid",
                 ".validate": "newData.isBoolean() || !newData.exists()"
               }
             }
           }
         },
-        
-        // Players: self-write or owner can modify
+
         "players": {
           "$playerId": {
             ".write": "auth != null && ($playerId === auth.uid || root.child('rooms').child($roomCode).child('ownerId').val() === auth.uid)",
             ".validate": "newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 20",
-            
             "name": {
               ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 20"
             },
@@ -123,13 +108,12 @@
             }
           }
         },
-        
-        // Messages: any authenticated player can send
+
         "messages": {
+          ".write": "auth != null && root.child('rooms').child($roomCode).child('ownerId').val() === auth.uid",
           "$messageId": {
             ".write": "auth != null",
             ".validate": "newData.hasChildren(['playerName', 'message', 'timestamp', 'type']) && newData.child('message').isString() && newData.child('message').val().length > 0 && newData.child('message').val().length <= 200",
-            
             "playerId": {
               ".validate": "!newData.exists() || newData.isString()"
             },

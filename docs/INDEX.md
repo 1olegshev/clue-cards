@@ -22,7 +22,9 @@ components/             # React components
 ├── room/               # Room-specific components
 │   ├── GameView.tsx    # Active game UI
 │   ├── LobbyView.tsx   # Pre-game lobby UI
+│   ├── ConnectionStatus.tsx  # Loading skeleton + error states
 │   └── ...             # Status, teams, forms
+├── ConnectionIndicator.tsx  # Offline/online status in Navbar
 ├── ErrorBoundary.tsx   # Error boundary for graceful failures
 ├── GameBoard.tsx       # 5x5 word grid
 ├── GameContext.tsx     # Room-level state for Navbar
@@ -42,10 +44,11 @@ hooks/                  # Custom React hooks
 lib/                    # Firebase/infrastructure
 ├── firebase.ts         # Firebase initialization
 ├── firebase-auth.ts    # Anonymous auth
-└── rtdb-actions.ts     # All database operations
+├── rtdb-actions.ts     # All database operations (with transactions)
+└── retry.ts            # Retry utility with exponential backoff
 
 shared/                 # Pure logic (no React)
-├── types.ts            # TypeScript types
+├── types.ts            # TypeScript types (client + Firebase)
 ├── game-utils.ts       # Game logic (vote threshold, etc.)
 ├── validation.ts       # Input sanitization utilities
 ├── words.ts            # Word lists and board generation

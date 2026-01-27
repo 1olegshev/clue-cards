@@ -5,12 +5,22 @@
 
 import {
   ref, get, set, update, remove, push, serverTimestamp, onDisconnect,
+  runTransaction,
   DatabaseReference,
 } from "firebase/database";
 import { getDatabase } from "./firebase";
 import { generateBoard, assignTeams } from "@/shared/words";
 import { isValidClue, teamsAreReady, shufflePlayers, getRequiredVotes } from "@/shared/game-utils";
-import type { Player, Team, PauseReason, WordPack } from "@/shared/types";
+import type {
+  Player,
+  Team,
+  PauseReason,
+  WordPack,
+  FirebaseBoardCard,
+  FirebasePlayerData,
+  FirebaseMessageData,
+  FirebaseRoomData,
+} from "@/shared/types";
 import {
   TURN_DURATIONS,
   DEFAULT_TURN_DURATION,
@@ -25,51 +35,11 @@ import {
   isValidClueFormat,
 } from "@/shared/validation";
 
-interface BoardCard {
-  word: string;
-  team: Team;
-  revealed: boolean;
-  revealedBy: string | null;
-  votes: Record<string, boolean>; // RTDB uses objects instead of arrays for sets
-}
-
-interface RoomData {
-  ownerId: string;
-  currentTeam: Team;
-  startingTeam: Team;
-  wordPack: WordPack;
-  currentClue: { word: string; count: number } | null;
-  remainingGuesses: number | null;
-  turnStartTime: number | null;
-  turnDuration: number;
-  gameStarted: boolean;
-  gameOver: boolean;
-  winner: Team | null;
-  paused: boolean;
-  pauseReason: PauseReason | null;
-  pausedForTeam: Team | null;
-  createdAt: number;
-  board: BoardCard[];
-  players?: Record<string, PlayerData>;
-  messages?: Record<string, MessageData>;
-}
-
-interface PlayerData {
-  name: string;
-  avatar: string;
-  team: Team | null;
-  role: "clueGiver" | "guesser" | null;
-  connected: boolean;
-  lastSeen: number;
-}
-
-interface MessageData {
-  playerId: string | null;
-  playerName: string;
-  message: string;
-  timestamp: number;
-  type: "clue" | "chat" | "system";
-}
+// Type aliases for internal use (cleaner code)
+type BoardCard = FirebaseBoardCard;
+type RoomData = FirebaseRoomData;
+type PlayerData = FirebasePlayerData;
+type MessageData = FirebaseMessageData;
 
 function getDb() {
   const db = getDatabase();
@@ -666,7 +636,9 @@ export async function voteCard(roomCode: string, playerId: string, cardIndex: nu
   const db = getDb();
   const roomRef = ref(db, `rooms/${roomCode}`);
   const playerRef = ref(db, `rooms/${roomCode}/players/${playerId}`);
+  const votesRef = ref(db, `rooms/${roomCode}/board/${cardIndex}/votes`);
 
+  // First validate player and game state (these don't need to be in the transaction)
   const [roomSnap, playerSnap] = await Promise.all([get(roomRef), get(playerRef)]);
   if (!roomSnap.exists()) throw new Error("Room not found");
   if (!playerSnap.exists()) throw new Error("Player not found");
@@ -684,17 +656,20 @@ export async function voteCard(roomCode: string, playerId: string, cardIndex: nu
     throw new Error("Invalid card");
   }
 
-  const card = board[cardIndex];
-  const votes = { ...card.votes };
-
-  // Toggle vote
-  if (votes[playerId]) {
-    delete votes[playerId];
-  } else {
-    votes[playerId] = true;
-  }
-
-  await update(ref(db, `rooms/${roomCode}/board/${cardIndex}`), { votes });
+  // Use transaction to atomically toggle the vote
+  // This prevents race conditions when multiple players vote simultaneously
+  await runTransaction(votesRef, (currentVotes) => {
+    const votes = currentVotes || {};
+    
+    // Toggle vote
+    if (votes[playerId]) {
+      delete votes[playerId];
+    } else {
+      votes[playerId] = true;
+    }
+    
+    return votes;
+  });
 }
 
 export async function confirmReveal(roomCode: string, playerId: string, cardIndex: number): Promise<void> {
@@ -702,6 +677,7 @@ export async function confirmReveal(roomCode: string, playerId: string, cardInde
   const roomRef = ref(db, `rooms/${roomCode}`);
   const playerRef = ref(db, `rooms/${roomCode}/players/${playerId}`);
   const playersRef = ref(db, `rooms/${roomCode}/players`);
+  const cardRevealedRef = ref(db, `rooms/${roomCode}/board/${cardIndex}/revealed`);
 
   const [roomSnap, playerSnap, playersSnap] = await Promise.all([
     get(roomRef),
@@ -737,6 +713,20 @@ export async function confirmReveal(roomCode: string, playerId: string, cardInde
     throw new Error("Not enough votes");
   }
 
+  // Use transaction to atomically claim the reveal (prevents race condition)
+  // If two players try to reveal simultaneously, only one will succeed
+  const transactionResult = await runTransaction(cardRevealedRef, (currentRevealed) => {
+    if (currentRevealed === true) {
+      // Card already revealed by another player - abort transaction
+      return undefined;
+    }
+    return true;
+  });
+
+  if (!transactionResult.committed) {
+    throw new Error("Card already revealed");
+  }
+
   const isCorrect = card.team === roomData.currentTeam;
   const isTrap = card.team === "trap";
   // Count remaining team cards (excluding the one we're about to reveal)
@@ -756,10 +746,9 @@ export async function confirmReveal(roomCode: string, playerId: string, cardInde
     : "🟡";
   const revealMessage = `${teamEmoji} "${card.word}" revealed — ${teamLabel}`;
 
-  // Use multi-path update for efficiency - only update the specific card, not entire board
-  // This reduces data transfer and improves performance
+  // Update remaining card fields and game state
+  // Note: revealed is already set to true by the transaction above
   const cardUpdate = {
-    [`board/${cardIndex}/revealed`]: true,
     [`board/${cardIndex}/revealedBy`]: playerId,
     [`board/${cardIndex}/votes`]: {},
   };

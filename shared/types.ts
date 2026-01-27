@@ -54,3 +54,68 @@ export interface ChatMessage {
 }
 
 export type RoomClosedReason = "abandoned" | "allPlayersLeft" | "timeout";
+
+// ============================================================================
+// Firebase Data Structures (matches RTDB schema exactly)
+// ============================================================================
+
+/**
+ * Board card as stored in Firebase.
+ * Note: votes use Record<string, boolean> for RTDB efficiency (vs array).
+ */
+export interface FirebaseBoardCard {
+  word: string;
+  team: Team;
+  revealed: boolean;
+  revealedBy: string | null;
+  votes: Record<string, boolean>;
+}
+
+/**
+ * Player data as stored in Firebase.
+ * Note: id is NOT included here - it's the Record key in players collection.
+ */
+export interface FirebasePlayerData {
+  name: string;
+  avatar: string;
+  team: Team | null;
+  role: Role | null;
+  connected: boolean;
+  lastSeen: number;
+}
+
+/**
+ * Message data as stored in Firebase.
+ * Note: id is NOT included here - it's the Record key in messages collection.
+ */
+export interface FirebaseMessageData {
+  playerId: string | null;
+  playerName: string;
+  message: string;
+  timestamp: number;
+  type: "clue" | "chat" | "system";
+}
+
+/**
+ * Room data as stored in Firebase (excluding players and messages collections).
+ */
+export interface FirebaseRoomData {
+  ownerId: string;
+  currentTeam: Team;
+  startingTeam: Team;
+  wordPack: WordPack;
+  currentClue: { word: string; count: number } | null;
+  remainingGuesses: number | null;
+  turnStartTime: number | null;
+  turnDuration: number;
+  gameStarted: boolean;
+  gameOver: boolean;
+  winner: Team | null;
+  paused: boolean;
+  pauseReason: PauseReason;
+  pausedForTeam: Team | null;
+  createdAt: number;
+  board: FirebaseBoardCard[];
+  players?: Record<string, FirebasePlayerData>;
+  messages?: Record<string, FirebaseMessageData>;
+}

@@ -8,7 +8,7 @@ import { ref, onValue, query, orderByChild, limitToLast, off, DatabaseReference 
 import { getDatabase } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 import * as actions from "@/lib/rtdb-actions";
-import { toGameState, toPlayers, toMessages, PlayerData, GameState, Player, ChatMessage, RoomClosedReason } from "./types";
+import { toGameState, toPlayers, toMessages, PlayerData, GameState, Player, ChatMessage, RoomClosedReason, FirebaseRoomData } from "./types";
 
 export interface UseRoomConnectionReturn {
   gameState: GameState | null;
@@ -39,7 +39,7 @@ export function useRoomConnection(
   const [connectedPlayerCount, setConnectedPlayerCount] = useState(0);
   const [roomClosedReason, setRoomClosedReason] = useState<RoomClosedReason | null>(null);
 
-  const roomDataRef = useRef<any>(null);
+  const roomDataRef = useRef<FirebaseRoomData | null>(null);
   const playersDataRef = useRef<Record<string, PlayerData> | null>(null);
   const disconnectRefRef = useRef<DatabaseReference | null>(null);
 
@@ -113,7 +113,10 @@ export function useRoomConnection(
       // Update onDisconnect behavior when connected count changes
       if (connected !== lastConnectedCount && playerId) {
         lastConnectedCount = connected;
-        actions.updateDisconnectBehavior(roomCode, playerId, connected).catch(() => {});
+        actions.updateDisconnectBehavior(roomCode, playerId, connected).catch((err) => {
+          // Log but don't show to user - this is a background operation
+          console.warn("[Room] Failed to update disconnect behavior:", err.message);
+        });
         
         // Fix race condition: Only try to reassign owner if this player could become owner
         // (i.e., they are the first connected player alphabetically by ID)
@@ -125,7 +128,10 @@ export function useRoomConnection(
           
           // Only the first connected player (by ID order) should attempt reassignment
           if (connectedPlayerIds[0] === playerId) {
-            actions.reassignOwnerIfNeeded(roomCode).catch(() => {});
+            actions.reassignOwnerIfNeeded(roomCode).catch((err) => {
+              // Log but don't show to user - this is a background operation
+              console.warn("[Room] Failed to reassign owner:", err.message);
+            });
           }
         }
       }
@@ -159,9 +165,12 @@ export function useRoomConnection(
       off(playersRef);
       off(messagesRef);
       
-      // Explicitly leave room on navigation (fire and forget)
+      // Explicitly leave room on navigation
+      // Log errors but don't block cleanup - user is already navigating away
       if (playerId) {
-        actions.leaveRoom(roomCode, playerId).catch(() => {});
+        actions.leaveRoom(roomCode, playerId).catch((err) => {
+          console.warn("[Room] Failed to leave room cleanly:", err.message);
+        });
       }
     };
   }, [roomCode, playerName, playerAvatar, uid, authLoading]);

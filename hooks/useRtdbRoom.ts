@@ -22,6 +22,7 @@ export interface UseRtdbRoomReturn {
   roomClosedReason: RoomClosedReason | null;
   chatInput: string;
   setChatInput: (value: string) => void;
+  isSendingChat: boolean;
   handleStartGame: () => void;
   handleSetLobbyRole: (team: "red" | "blue" | null, role: "clueGiver" | "guesser" | null, targetPlayerId?: string) => void;
   handleRandomizeTeams: () => void;
@@ -95,6 +96,7 @@ export function useRtdbRoom(
     // Chat
     chatInput: chatActions.chatInput,
     setChatInput: chatActions.setChatInput,
+    isSendingChat: chatActions.isSending,
     handleSendMessage: chatActions.handleSendMessage,
     
     // Game actions

@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from "react";
 import { useTheme } from "./ThemeProvider";
 import { useGameContext } from "./GameContext";
 import SoundToggle from "./SoundToggle";
+import ConnectionIndicator from "./ConnectionIndicator";
 
 function SunIcon({ className }: { className?: string }) {
   return (
@@ -168,6 +169,7 @@ export default function Navbar() {
           </Link>
 
           <div className="flex items-center gap-1">
+            <ConnectionIndicator />
             <SoundToggle />
             <button
               onClick={cycleTheme}
