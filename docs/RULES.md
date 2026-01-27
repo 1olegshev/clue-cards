@@ -21,7 +21,7 @@ This project follows standard word-guessing game rules, with the following clari
   - Prefix/suffix relationships (e.g., "farm" blocked if "farmer" on board, but "war" allowed even if "dwarf" on board)
   - Simple plural variants (adding/removing S/ES)
 - Guessers vote on a card first; a teammate must confirm once votes meet a threshold.
-- Room owner can start rematch after game ends, keeping all players.
+- Room owner can start rematch after game ends. Players can reassign roles before rematch, or owner can randomize teams.
 - Minimum 4 players on teams required to start. Teams don't need to be equal size.
 - Players choose a lobby team and role before start; owner can randomize assignments and override choices.
 - Players can remain as spectators (not on a team) when the game starts.
