@@ -184,7 +184,14 @@ export function SoundProvider({ children }: { children: ReactNode }) {
     setCurrentTrackState(track);
   }, []);
 
+  // Store musicVolume in a ref so we can use it in the playback effect without it being a dependency
+  const musicVolumeRef = useRef(musicVolume);
+  useEffect(() => {
+    musicVolumeRef.current = musicVolume;
+  }, [musicVolume]);
+
   // Handle music playback based on track, enabled state, and reduced motion
+  // NOTE: musicVolume is NOT in dependencies - volume changes are handled by separate effect below
   useEffect(() => {
     // Stop current music if exists
     if (howlRef.current) {
@@ -212,9 +219,9 @@ export function SoundProvider({ children }: { children: ReactNode }) {
 
     howlRef.current = howl;
 
-    // Play and fade in
+    // Play and fade in to current volume (use ref to get latest value)
     howl.play();
-    howl.fade(0, musicVolume, 1000);
+    howl.fade(0, musicVolumeRef.current, 1000);
 
     // Cleanup on unmount or track change
     return () => {
@@ -226,9 +233,9 @@ export function SoundProvider({ children }: { children: ReactNode }) {
         }, 300);
       }
     };
-  }, [currentTrack, musicEnabled, isHydrated, prefersReducedMotion, musicVolume]);
+  }, [currentTrack, musicEnabled, isHydrated, prefersReducedMotion]);
 
-  // Update volume when musicVolume changes (without recreating howl)
+  // Update volume when musicVolume changes (without recreating/restarting howl)
   useEffect(() => {
     if (howlRef.current && musicEnabled && isHydrated) {
       howlRef.current.volume(musicVolume);
