@@ -38,12 +38,12 @@
           ".write": "auth != null && (root.child('rooms').child($roomCode).child('ownerId').val() === auth.uid || root.child('rooms').child($roomCode).child('players').child(auth.uid).child('role').val() === 'guesser' || root.child('rooms').child($roomCode).child('players').child(auth.uid).child('role').val() === 'clueGiver')"
         },
         "turnDuration": {
-          ".write": "auth != null && root.child('rooms').child($roomCode).child('ownerId').val() === auth.uid && !root.child('rooms').child($roomCode).child('gameStarted').val()",
+          ".write": "auth != null && root.child('rooms').child($roomCode).child('ownerId').val() === auth.uid && root.child('rooms').child($roomCode).child('gameStarted').val() !== true",
           ".validate": "newData.isNumber() && (newData.val() === 30 || newData.val() === 60 || newData.val() === 90)"
         },
 
         "wordPack": {
-          ".write": "auth != null && root.child('rooms').child($roomCode).child('ownerId').val() === auth.uid && !root.child('rooms').child($roomCode).child('gameStarted').val()",
+          ".write": "auth != null && root.child('rooms').child($roomCode).child('ownerId').val() === auth.uid && root.child('rooms').child($roomCode).child('gameStarted').val() !== true",
           ".validate": "newData.isString() && (newData.val() === 'classic' || newData.val() === 'kahoot')"
         },
 
